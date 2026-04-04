@@ -1,0 +1,71 @@
+name: Verification Gate
+
+on:
+  push:
+    branches: [ "main", "main-trae" ]
+  pull_request:
+    branches: [ "main", "main-trae" ]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Start app
+        run: |
+          npm run dev > /tmp/karmasetu-dev.log 2>&1 &
+          echo $! > /tmp/karmasetu-dev.pid
+
+      - name: Wait for health endpoint
+        run: |
+          for i in {1..90}; do
+            if curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/api/health | grep -E "200|503" > /dev/null; then
+              echo "Health endpoint is reachable"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Health endpoint did not become ready in time"
+          exit 1
+
+      - name: Run verification gate
+        env:
+          SMOKE_BASE_URL: http://127.0.0.1:3000
+          VERIFY_REQUIRE_DB_OK: "false"
+          VERIFY_REQUIRE_SARVAM: "false"
+          HEALTH_RESPONSE_MAX_MS: "6000"
+          MONGO_LATENCY_MAX_MS: "8000"
+          SMOKE_MAX_HEALTH_MS: "7000"
+          SMOKE_MAX_MONGO_PING_MS: "9000"
+          SMOKE_MAX_TRAINEE_DASHBOARD_MS: "7000"
+          SMOKE_MAX_ADMIN_DASHBOARD_MS: "7000"
+        run: npm run verify:gate
+
+      - name: Show app logs on failure
+        if: failure()
+        run: |
+          echo "--- /tmp/karmasetu-dev.log ---"
+          tail -n 300 /tmp/karmasetu-dev.log || true
+
+      - name: Stop app
+        if: always()
+        run: |
+          if [ -f /tmp/karmasetu-dev.pid ]; then
+            kill $(cat /tmp/karmasetu-dev.pid) || true
+          fi

@@ -1,0 +1,231 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
+
+@theme inline {
+  --color-bg-primary: #020817;
+  --color-bg-secondary: #0f172a;
+  --color-bg-card: #1e293b;
+  --color-accent-cyan: #06b6d4;
+  --color-accent-blue: #3b82f6;
+  --color-accent-purple: #8b5cf6;
+  --color-text-primary: #f8fafc;
+  --color-text-muted: #94a3b8;
+  --color-border: #1e293b;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --font-sans: 'Inter', sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-bg-primary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-bg-card);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent-cyan);
+}
+
+/* Float animation for dashboard mockup */
+@keyframes float {
+  0% { transform: translateY(-8px); }
+  100% { transform: translateY(8px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite alternate;
+}
+
+/* Pulse glow animation */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Grid background pattern */
+.grid-pattern {
+  background-image: 
+    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+/* Glassmorphism card */
+.glass-card {
+  background: rgba(15, 23, 42, 0.6);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(30, 41, 59, 0.8);
+  border-radius: 1rem;
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #06b6d4, #3b82f6, #8b5cf6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Chat Pulse animation for trigger button */
+@keyframes chatPulse {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.15); opacity: 0; }
+}
+
+.animate-chat-pulse {
+  animation: chatPulse 2s ease-in-out infinite;
+}
+
+/* Mic pulse animation for active recording */
+@keyframes micPulse {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+.animate-mic-pulse {
+  animation: micPulse 1.5s ease-out infinite;
+}
+
+/* Sound wave animation for TTS indicator */
+@keyframes soundWave {
+  0%, 100% { height: 4px; }
+  50% { height: 12px; }
+}
+
+.animate-sound-wave {
+  animation: soundWave 1s ease-in-out infinite alternate;
+}
+
+.delay-0 {
+  animation-delay: 0ms;
+}
+
+.delay-150 {
+  animation-delay: 150ms;
+}
+
+.delay-300 {
+  animation-delay: 300ms;
+}
+
+/* Typing dot animation */
+@keyframes typingDot {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-6px); }
+}
+
+.animate-typing-dot {
+  animation: typingDot 1.2s ease-in-out infinite;
+}
+
+/* Mobile safe area for input */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+
+/* Hide scrollbar completely (useful for bottom horizontal scrolling) */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+}
+
+
+/* ─── Bug Fix #1: Rogue Teal Dot / Cursor Suppression ─── */
+/* Targeted fix for specific follower blobs only - DO NOT use broad [class*="cursor-"] */
+.mouse-follower,
+.cursor-blob-follower,
+.animated-spotlight-blob {
+  pointer-events: none !important;
+  z-index: -1 !important;
+  position: fixed !important;
+  opacity: 0.2 !important;
+}
+
+/* Ensure clean document flow for interactive elements */
+nav, .navbar, .login-card, .sidebar, .modal {
+  position: relative;
+  z-index: 50;
+}
+
+/* Ensure Navbar priority */
+nav.fixed {
+  z-index: 1000 !important;
+}
+
+/* Typography refinements */
+h1, h2, h3 {
+  letter-spacing: -0.02em;
+}
+
+/* Progress width utilities (5% steps) for lint-safe dynamic bars */
+.ks-progress-0 { width: 0%; }
+.ks-progress-5 { width: 5%; }
+.ks-progress-10 { width: 10%; }
+.ks-progress-15 { width: 15%; }
+.ks-progress-20 { width: 20%; }
+.ks-progress-25 { width: 25%; }
+.ks-progress-30 { width: 30%; }
+.ks-progress-35 { width: 35%; }
+.ks-progress-40 { width: 40%; }
+.ks-progress-45 { width: 45%; }
+.ks-progress-50 { width: 50%; }
+.ks-progress-55 { width: 55%; }
+.ks-progress-60 { width: 60%; }
+.ks-progress-65 { width: 65%; }
+.ks-progress-70 { width: 70%; }
+.ks-progress-75 { width: 75%; }
+.ks-progress-80 { width: 80%; }
+.ks-progress-85 { width: 85%; }
+.ks-progress-90 { width: 90%; }
+.ks-progress-95 { width: 95%; }
+.ks-progress-100 { width: 100%; }
+
+/* Recharts legend class-based styling (no inline style objects) */
+.ks-reports-pie-legend {
+  padding-top: 20px;
+}
+
+.ks-reports-legend-text {
+  font-size: 10px;
+  color: #64748b;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* Course player SVG progress ring transition (replaces inline style) */
+.ks-progress-ring {
+  transition: stroke-dashoffset 0.5s ease;
+}

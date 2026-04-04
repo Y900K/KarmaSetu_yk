@@ -1,0 +1,78 @@
+import { NextResponse } from 'next/server';
+import { ObjectId } from 'mongodb';
+import { getMongoDb } from '@/lib/mongodb';
+import { COLLECTIONS } from '@/lib/db/collections';
+import { resolveSessionUser } from '@/lib/auth/session';
+
+type UpdateFeedbackBody = {
+  status?: 'open' | 'reviewing' | 'resolved';
+  adminNote?: string;
+};
+
+const ALLOWED_STATUS = new Set(['open', 'reviewing', 'resolved']);
+
+export async function PATCH(request: Request, context: { params: Promise<{ feedbackId: string }> }) {
+  try {
+    const db = await getMongoDb();
+    const session = await resolveSessionUser(db, request);
+
+    if (!session) {
+      return NextResponse.json({ ok: false, message: 'Not authenticated.' }, { status: 401 });
+    }
+
+    if (session.user.role !== 'admin') {
+      return NextResponse.json({ ok: false, message: 'Admin access denied.' }, { status: 403 });
+    }
+
+    const { feedbackId } = await context.params;
+    if (!ObjectId.isValid(feedbackId)) {
+      return NextResponse.json({ ok: false, message: 'Invalid feedback id.' }, { status: 400 });
+    }
+
+    const body = (await request.json().catch(() => ({}))) as UpdateFeedbackBody;
+    const nextStatus = typeof body.status === 'string' && ALLOWED_STATUS.has(body.status)
+      ? body.status
+      : undefined;
+    const adminNote = typeof body.adminNote === 'string' ? body.adminNote.trim() : undefined;
+
+    if (nextStatus === 'resolved' && (!adminNote || adminNote.length < 5)) {
+      return NextResponse.json(
+        { ok: false, message: 'Admin note (min 5 characters) is required before resolving feedback.' },
+        { status: 400 }
+      );
+    }
+
+    if (!nextStatus && !adminNote) {
+      return NextResponse.json({ ok: false, message: 'Nothing to update.' }, { status: 400 });
+    }
+
+    const updateSet: Record<string, unknown> = { updatedAt: new Date() };
+    if (nextStatus) {
+      updateSet.status = nextStatus;
+    }
+    if (adminNote) {
+      updateSet.adminNote = adminNote;
+    }
+
+    const result = await db.collection(COLLECTIONS.traineeFeedback).updateOne(
+      { _id: new ObjectId(feedbackId) },
+      { $set: updateSet }
+    );
+
+    if (result.matchedCount === 0) {
+      return NextResponse.json({ ok: false, message: 'Feedback not found.' }, { status: 404 });
+    }
+
+    return NextResponse.json({ ok: true, message: 'Feedback updated.' });
+  } catch (error) {
+    const details = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json(
+      {
+        ok: false,
+        message: 'Failed to update feedback.',
+        details: process.env.NODE_ENV === 'development' ? details : undefined,
+      },
+      { status: 500 }
+    );
+  }
+}
