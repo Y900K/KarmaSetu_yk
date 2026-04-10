@@ -80,8 +80,9 @@ export default function ForgotPasswordPage() {
         {step === 'request' ? (
           <form onSubmit={requestCode} className="space-y-4">
             <div>
-              <label className="mb-2 block text-xs text-slate-300">Email</label>
+              <label htmlFor="forgot-email" className="mb-2 block text-xs text-slate-300">Email</label>
               <input
+                id="forgot-email"
                 type="email"
                 required
                 value={email}
@@ -101,8 +102,9 @@ export default function ForgotPasswordPage() {
         ) : (
           <form onSubmit={resetPassword} className="space-y-4">
             <div>
-              <label className="mb-2 block text-xs text-slate-300">Email</label>
+              <label htmlFor="reset-email" className="mb-2 block text-xs text-slate-300">Email</label>
               <input
+                id="reset-email"
                 type="email"
                 required
                 value={email}
@@ -111,8 +113,9 @@ export default function ForgotPasswordPage() {
               />
             </div>
             <div>
-              <label className="mb-2 block text-xs text-slate-300">Reset Code</label>
+              <label htmlFor="reset-code" className="mb-2 block text-xs text-slate-300">Reset Code</label>
               <input
+                id="reset-code"
                 type="text"
                 required
                 value={code}
@@ -122,8 +125,9 @@ export default function ForgotPasswordPage() {
               />
             </div>
             <div>
-              <label className="mb-2 block text-xs text-slate-300">New Password</label>
+              <label htmlFor="new-password" className="mb-2 block text-xs text-slate-300">New Password</label>
               <input
+                id="new-password"
                 type="password"
                 required
                 value={newPassword}

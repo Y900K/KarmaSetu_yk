@@ -1,9 +1,19 @@
 import { toJpeg } from 'html-to-image';
-import { jsPDF } from 'jspdf';
+import { PDFDocument } from 'pdf-lib';
 import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
 import React from 'react';
 import PremiumCertificate, { CertificateData } from '@/components/shared/PremiumCertificate';
+
+function dataUrlToUint8Array(dataUrl: string): Uint8Array {
+  const base64 = dataUrl.split(',')[1] || '';
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
 
 export const downloadPremiumCertificate = async (cert: CertificateData, onStart?: () => void, onComplete?: () => void) => {
   if (onStart) onStart();
@@ -82,19 +92,27 @@ export const downloadPremiumCertificate = async (cert: CertificateData, onStart?
       }
     });
 
-    // 5. Convert to PDF using the exact real-world dimensions rendered (not forced into rigid A4)
-    // Create a precise Landscape PDF that mirrors the rendered aspect ratio perfectly without large white gaps.
-    const pdf = new jsPDF({
-      orientation: 'landscape',
-      unit: 'px',
-      format: [1050, contentHeight]
-    });
+    // 5. Convert to PDF with pdf-lib using the captured image dimensions.
+    const pdfDoc = await PDFDocument.create();
+    const jpgImage = await pdfDoc.embedJpg(dataUrlToUint8Array(imgData));
+    const page = pdfDoc.addPage([1050, contentHeight]);
+    page.drawImage(jpgImage, { x: 0, y: 0, width: 1050, height: contentHeight });
 
-    pdf.addImage(imgData, 'JPEG', 0, 0, 1050, contentHeight);
-    
-    // Save locally skipping browser print queues
+    const pdfBytes = await pdfDoc.save();
+    const pdfBuffer = new ArrayBuffer(pdfBytes.byteLength);
+    new Uint8Array(pdfBuffer).set(pdfBytes);
+    const blob = new Blob([pdfBuffer], { type: 'application/pdf' });
+    const objectUrl = URL.createObjectURL(blob);
+
+    // Save locally without browser print dialog.
     const fileName = `Karmasetu_Premium_${String(cert.certNo || 'cert').replace(/\s/g, '_')}.pdf`;
-    pdf.save(fileName);
+    const anchor = document.createElement('a');
+    anchor.href = objectUrl;
+    anchor.download = fileName;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    URL.revokeObjectURL(objectUrl);
 
     // 6. Cleanup
     setTimeout(() => {
