@@ -20,7 +20,7 @@ export async function POST(request: Request) {
 
     const deptName = department.trim();
 
-    const configRef = db.collection(COLLECTIONS.systemConfig);
+    const configRef = db.collection<{ _id: string; departments?: string[] }>(COLLECTIONS.systemConfig);
     const existing = await configRef.findOne({ _id: 'departments' });
 
     const departments: string[] = existing?.departments || ["Safety & EHS", "Production", "Maintenance", "Quality Control", "Electrical", "Chemical / Process", "HR / Admin"];
@@ -63,8 +63,8 @@ export async function PUT(request: Request) {
     const deptOldName = oldName.trim();
     const deptNewName = newName.trim();
 
-    const configRef = db.collection(COLLECTIONS.systemConfig);
-    const existing = await configRef.findOne({ _id: 'departments' as unknown });
+    const configRef = db.collection<{ _id: string; departments?: string[] }>(COLLECTIONS.systemConfig);
+    const existing = await configRef.findOne({ _id: 'departments' });
 
     let departments: string[] = existing?.departments || ["Safety & EHS", "Production", "Maintenance", "Quality Control", "Electrical", "Chemical / Process", "HR / Admin"];
 
@@ -82,7 +82,7 @@ export async function PUT(request: Request) {
     mongoSession.startTransaction();
 
     await configRef.updateOne(
-      { _id: 'departments' as unknown },
+      { _id: 'departments' },
       { $set: { departments, updatedAt: new Date() } },
       { upsert: true, session: mongoSession }
     );
@@ -144,8 +144,8 @@ export async function DELETE(request: Request) {
 
     const deptName = decodeURIComponent(departmentStr);
 
-    const configRef = db.collection(COLLECTIONS.systemConfig);
-    const existing = await configRef.findOne({ _id: 'departments' as unknown });
+    const configRef = db.collection<{ _id: string; departments?: string[] }>(COLLECTIONS.systemConfig);
+    const existing = await configRef.findOne({ _id: 'departments' });
 
     let departments: string[] = existing?.departments || ["Safety & EHS", "Production", "Maintenance", "Quality Control", "Electrical", "Chemical / Process", "HR / Admin"];
 
@@ -155,7 +155,7 @@ export async function DELETE(request: Request) {
     mongoSession.startTransaction();
 
     await configRef.updateOne(
-      { _id: 'departments' as unknown },
+      { _id: 'departments' },
       { $set: { departments, updatedAt: new Date() } },
       { upsert: true, session: mongoSession }
     );
@@ -170,14 +170,14 @@ export async function DELETE(request: Request) {
     // Update courses by pulling the department
     await db.collection(COLLECTIONS.courses).updateMany(
       { departments: deptName },
-      { $pull: { departments: deptName as unknown } },
+      { $pull: { departments: deptName } } as any,
       { session: mongoSession }
     );
 
     // Announcements
     await db.collection(COLLECTIONS.adminAnnouncements).updateMany(
       { sentTo: deptName },
-      { $pull: { sentTo: deptName as unknown } },
+      { $pull: { sentTo: deptName } } as any,
       { session: mongoSession }
     );
     
