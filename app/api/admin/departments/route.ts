@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     const deptName = department.trim();
 
     const configRef = db.collection(COLLECTIONS.systemConfig);
-    const existing = await configRef.findOne({ _id: 'departments' as unknown });
+    const existing = await configRef.findOne({ _id: 'departments' });
 
     const departments: string[] = existing?.departments || ["Safety & EHS", "Production", "Maintenance", "Quality Control", "Electrical", "Chemical / Process", "HR / Admin"];
 
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     departments.push(deptName);
     
     await configRef.updateOne(
-      { _id: 'departments' as unknown },
+      { _id: 'departments' },
       { $set: { departments, updatedAt: new Date() } },
       { upsert: true }
     );
