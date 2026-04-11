@@ -12,7 +12,7 @@
     },
     {
       "path": "/api/admin/system/cron",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 1 * * *"
     }
   ],
   "headers": [
