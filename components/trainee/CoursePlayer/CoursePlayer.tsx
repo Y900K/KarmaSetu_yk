@@ -85,6 +85,7 @@ export default function CoursePlayer({ courseId }: { courseId: string }) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [certNo, setCertNo] = useState<string | null>(null);
   const [isFirstAttempt, setIsFirstAttempt] = useState(false);
+  const [userAnswers, setUserAnswers] = useState<Record<number, number>>({});
   const [showOverview, setShowOverview] = useState(false);
   const [hasCheckedInitialProgress, setHasCheckedInitialProgress] = useState(false);
 
@@ -105,6 +106,7 @@ export default function CoursePlayer({ courseId }: { courseId: string }) {
     );
     setActiveLessonId(getInitialLessonId(registryCourse));
     setIsFirstAttempt(false);
+    setUserAnswers({});
 
     if (registryCourse) {
       return;
@@ -130,6 +132,7 @@ export default function CoursePlayer({ courseId }: { courseId: string }) {
         setActiveDocId(getInitialDocId(loadedCourse));
         setCurrentView(getInitialView(loadedCourse));
         setSidebarTab(loadedCourse.lessons.length > 0 ? 'videos' : loadedCourse.documents.length > 0 ? 'docs' : 'quiz');
+        setUserAnswers({});
 
         // Check if course is just starting
         const completedLessons = loadedCourse.lessons.filter(l => l.completed).length;
@@ -353,7 +356,8 @@ export default function CoursePlayer({ courseId }: { courseId: string }) {
     setSidebarOpenMobile(false);
   };
 
-  const handleQuizComplete = (score: number, passed: boolean, reason: 'manual' | 'auto_timeout' = 'manual') => {
+  const handleQuizComplete = (score: number, passed: boolean, reason: 'manual' | 'auto_timeout' = 'manual', answers: Record<number, number> = {}) => {
+    setUserAnswers(answers);
     const questionCount = Math.max(1, course.quiz.questions.length);
     const percentScore = Math.round((score / questionCount) * 100);
     const currentProgressPct = Math.round((completedLessonsCount / Math.max(1, course.lessons.length)) * 100);
@@ -540,6 +544,7 @@ export default function CoursePlayer({ courseId }: { courseId: string }) {
               passed={course.quiz.passed}
               certNo={certNo}
               isFirstAttempt={isFirstAttempt}
+              userAnswers={userAnswers}
               onRetake={() => setCurrentView('quiz')}
               onBackToCourse={() => setCurrentView(fallbackContentView)}
               onSubmitFeedback={async (rating, comment) => {

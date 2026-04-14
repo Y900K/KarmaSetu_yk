@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useEffect, useState, Suspense } from 'react';
 import { motion } from 'framer-motion';
@@ -181,7 +181,7 @@ function LoginContent() {
                    <div className={`absolute inset-0 rounded-xl bg-cyan-400 -z-10`} />
                 )}
                 {tab === 'trainee' ? <HardHat className="w-4 h-4 z-10" /> : <ShieldCheck className="w-4 h-4 z-10" />}
-                <span className="z-10">{tab === 'trainee' ? 'Trainee' : 'Supervisor'}</span>
+                <span className="z-10">{tab === 'trainee' ? 'Trainee' : 'Admin'}</span>
               </button>
             ))}
           </div>
@@ -194,7 +194,7 @@ function LoginContent() {
           
           <motion.div key={activeTab} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
             <div className="mb-6 pt-2">
-              <h2 className="text-2xl font-bold text-white mb-2">{activeTab === 'trainee' ? 'Trainee Login' : 'Supervisor Login'}</h2>
+              <h2 className="text-2xl font-bold text-white mb-2">{activeTab === 'trainee' ? 'Trainee Login' : 'Admin Login'}</h2>
               <p className="text-slate-400 text-sm">
                 Enter your credentials to securely access your {activeTab === 'trainee' ? 'learning dashboard' : 'management console'}.
               </p>

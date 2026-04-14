@@ -87,3 +87,73 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ u
     );
   }
 }
+
+export async function PATCH(request: Request, { params }: { params: Promise<{ userId: string }> }) {
+  try {
+    const admin = await requireSecureAdminMutation(request, 'admin_user_update');
+    if (!admin.ok) {
+      return admin.response;
+    }
+
+    const { db, session } = admin;
+    const body = await request.json().catch(() => ({}));
+
+    if (!body.approvalStatus || !['approved', 'restricted'].includes(body.approvalStatus)) {
+      return NextResponse.json({ ok: false, message: 'Invalid approval status.' }, { status: 400 });
+    }
+
+    const { userId } = await params;
+    if (!ObjectId.isValid(userId)) {
+      return NextResponse.json({ ok: false, message: 'Invalid user id.' }, { status: 400 });
+    }
+
+    const _id = new ObjectId(userId);
+    const targetUser = await db.collection(COLLECTIONS.users).findOne({ _id });
+
+    if (!targetUser) {
+      return NextResponse.json({ ok: false, message: 'User not found.' }, { status: 404 });
+    }
+
+    if (targetUser.role === 'admin') {
+      return NextResponse.json({ ok: false, message: 'Cannot modify admin users via this endpoint.' }, { status: 403 });
+    }
+
+    const accessLevel = body.approvalStatus === 'approved' ? 'full' : 'basic';
+
+    await db.collection(COLLECTIONS.users).updateOne(
+      { _id },
+      {
+        $set: {
+          approvalStatus: body.approvalStatus,
+          accessLevel: accessLevel,
+          updatedAt: new Date(),
+        },
+      }
+    );
+
+    // If restricting, kill their active sessions
+    if (body.approvalStatus === 'restricted') {
+      await db.collection(COLLECTIONS.sessions).deleteMany({ userId });
+    }
+
+    await logSystemEvent(
+      'INFO',
+      'admin_user_update',
+      `User status changed to ${body.approvalStatus}`,
+      { actorAdminId: session.user._id.toString(), targetUserId: userId, newStatus: body.approvalStatus },
+      session.user._id.toString()
+    );
+
+    return NextResponse.json({ ok: true, message: `User status changed to ${body.approvalStatus}.` });
+  } catch (error) {
+    const details = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json(
+      {
+        ok: false,
+        message: 'Failed to update user status.',
+        details: process.env.NODE_ENV === 'development' ? details : undefined,
+      },
+      { status: 500 }
+    );
+  }
+}

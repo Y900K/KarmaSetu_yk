@@ -61,17 +61,20 @@ export const ACHIEVEMENTS = [
 ];
 
 export const SAFETY_TIPS = [
-  "Chemical handling में label और SDS verify किए बिना process start मत करो।",
-  "Always wear PPE before entering the production floor — no exceptions.",
-  "Fire extinguisher की location और type हर shift से पहले check करो।",
-  "LOTO procedure को bypass करना strictly prohibited है।",
-  "Report every near-miss incident — small hazards prevent big accidents.",
-  "Electrical panel के पास काम करते वक्त insulated gloves जरूरी हैं।",
-  "Housekeeping is safety — a clean workplace prevents most accidents.",
-  "Emergency exit routes याद रखो and कभी block मत करो।",
-  "Hydration breaks लो — थका हुआ worker = unsafe worker.",
-  "Safety is everyone's responsibility — speak up when you see a hazard.",
+  "Always wear your PPE (Personal Protective Equipment) before entering the production floor.",
+  "In case of a chemical spill, evacuate the area and notify your EHS officer immediately.",
+  "Never bypass machine safety guards — they exist to protect you.",
+  "Keep emergency exits clear at all times. Blocked exits cost lives.",
+  "Report every near-miss incident. Small warnings prevent big accidents.",
+  "Know your fire extinguisher types: CO₂ for electrical, foam for flammable liquids.",
+  "Proper housekeeping prevents slips, trips, and falls — the #1 workplace injury.",
+  "Always follow Lockout/Tagout (LOTO) procedures before maintenance work.",
+  "Store chemicals in their designated areas with correct labels visible.",
+  "Attend all safety drills — practice makes response automatic in emergencies.",
+  "Wear hearing protection in zones above 85 decibels.",
+  "Check all lifting equipment before each use — never exceed rated capacity.",
 ];
+
 
 export const LEADERBOARD_DATA = [
   { rank: 1, name: "Priya Mehta", avatar: "PM", dept: "Safety", pts: 83, courses: "7/8", certs: 1, badge: "Gold", badgeColor: "#f59e0b" },

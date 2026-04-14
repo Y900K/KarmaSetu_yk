@@ -25,7 +25,7 @@ type ProfileState = {
 const defaultProfile: ProfileState = {
   name: 'Trainee User',
   email: '',
-  role: 'trainee',
+  role: 'Trainee',
   department: 'General',
   avatar: 'TU',
   phone: '',
@@ -185,7 +185,7 @@ function ProfileContent() {
     <div className="max-w-6xl mx-auto w-full">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-white">My Profile</h1>
-        <p className="text-sm text-slate-400 mt-1">{profile.role} · {profile.department}</p>
+        <p className="text-sm text-slate-400 mt-1">{profile.role.charAt(0).toUpperCase() + profile.role.slice(1)} · {profile.department}</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -195,9 +195,15 @@ function ProfileContent() {
             {editing ? (
               <div className="space-y-4">
                 <div className="text-sm font-semibold text-white mb-2">Edit Profile</div>
-                <input value={editName} onChange={(event) => setEditName(event.target.value)} placeholder="Full Name" className={inputCls} />
-                <input value={editPhone} onChange={(event) => setEditPhone(event.target.value)} placeholder="Phone" type="tel" className={inputCls} />
-                <div className="flex gap-2">
+                <div>
+                  <label className="block text-[10px] text-slate-500 uppercase tracking-wider mb-1.5">Full Name</label>
+                  <input value={editName} onChange={(event) => setEditName(event.target.value)} placeholder="Full Name" className={inputCls} />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-500 uppercase tracking-wider mb-1.5">Phone Number</label>
+                  <input value={editPhone} onChange={(event) => setEditPhone(event.target.value)} placeholder="Phone" type="tel" className={inputCls} />
+                </div>
+                <div className="flex gap-2 mt-4">
                   <button onClick={saveProfile} className="flex-1 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-semibold text-sm rounded-xl cursor-pointer">💾 Save</button>
                   <button onClick={() => setEditing(false)} className="px-4 py-2.5 border border-[#334155] text-slate-400 rounded-xl text-sm cursor-pointer hover:text-white">Cancel</button>
                 </div>
@@ -359,7 +365,7 @@ function ProfileContent() {
         </div>
       </div>
 
-      {isLoadingProfile && <div className="text-xs text-slate-500 mt-4">Syncing profile from database...</div>}
+
     </div>
   );
 }

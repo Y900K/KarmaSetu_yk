@@ -20,6 +20,7 @@ type TraineeCertificate = {
   issueDate: string;
   expiry: string;
   status: 'Valid' | 'Expired' | 'Revoked';
+  courseRemoved?: boolean;
 };
 
 function CertificatesContent() {
@@ -196,11 +197,16 @@ function CertificatesContent() {
       ) : earnedCerts.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {earnedCerts.map((cert) => (
-            <div key={cert.id} className="bg-[#1e293b] border border-[#334155] rounded-2xl overflow-hidden hover:border-cyan-500/30 transition-all group shadow-xl">
-              <div className={`h-2 shadow-inner bg-gradient-to-r ${cert.theme}`} />
+            <div key={cert.id} className={`bg-[#1e293b] border ${cert.courseRemoved ? 'border-amber-500/30' : 'border-[#334155]'} rounded-2xl overflow-hidden ${cert.courseRemoved ? 'opacity-80' : 'hover:border-cyan-500/30 group shadow-xl'} transition-all relative`}>
+              <div className={`h-2 shadow-inner bg-gradient-to-r ${cert.courseRemoved ? 'from-slate-600 to-slate-800' : cert.theme}`} />
+              {cert.courseRemoved && (
+                <div className="absolute top-0 right-0 left-0 bg-amber-500/10 text-amber-500 text-[9px] font-bold text-center py-1 border-b border-amber-500/20 z-10 flex items-center justify-center gap-1">
+                  ⚠ Course removed by Admin
+                </div>
+              )}
               <div className="p-6">
                 <div className="flex items-start gap-4">
-                  <div className={`h-14 w-14 rounded-2xl bg-gradient-to-br ${cert.theme} flex items-center justify-center text-3xl flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform`}>
+                  <div className={`h-14 w-14 rounded-2xl bg-gradient-to-br ${cert.courseRemoved ? 'from-slate-600 to-slate-800 grayscale' : cert.theme} flex items-center justify-center text-3xl flex-shrink-0 shadow-lg ${!cert.courseRemoved ? 'group-hover:scale-110 transition-transform' : ''}`}>
                     {cert.icon}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -225,9 +231,9 @@ function CertificatesContent() {
                   </button>
                   {/* PDF */}
                   <button
-                    onClick={() => downloadPdfDirect(cert)}
-                    disabled={isDownloading === cert.certNo}
-                    className="flex-[2] py-3 lg:py-2.5 border border-slate-700 disabled:opacity-50 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl lg:rounded-lg text-xs md:text-sm cursor-pointer transition-colors shadow-sm active:scale-95 font-bold"
+                    onClick={() => cert.courseRemoved ? null : downloadPdfDirect(cert)}
+                    disabled={isDownloading === cert.certNo || cert.courseRemoved}
+                    className={`flex-[2] py-3 lg:py-2.5 border border-slate-700 disabled:opacity-50 ${cert.courseRemoved ? 'cursor-not-allowed text-slate-500 bg-black/20' : 'text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer'} rounded-xl lg:rounded-lg text-xs md:text-sm transition-colors shadow-sm active:scale-95 font-bold`}
                     title={t('certs.action_pdf')}
                   >
                     {isDownloading === cert.certNo ? '⏳ GENERATING...' : `⬇ ${t('certs.action_pdf')}`}
@@ -235,13 +241,14 @@ function CertificatesContent() {
                   {/* Share icon with dropdown */}
                   <div ref={shareOpen === cert.certNo ? shareRef : undefined} className="relative flex-1 lg:flex-none flex justify-end lg:border-l lg:border-slate-800 lg:pl-2">
                     <button
-                      onClick={() => handleShare(cert)}
-                      className="h-11 w-full lg:h-[38px] lg:w-[38px] flex items-center justify-center border border-slate-700 lg:border-transparent bg-[#1e293b] lg:bg-transparent text-slate-300 hover:text-cyan-400 hover:border-cyan-500/50 rounded-xl lg:rounded-lg text-base cursor-pointer transition-colors shadow-sm lg:shadow-none"
+                      onClick={() => cert.courseRemoved ? null : handleShare(cert)}
+                      disabled={cert.courseRemoved}
+                      className={`h-11 w-full lg:h-[38px] lg:w-[38px] flex items-center justify-center border border-slate-700 lg:border-transparent bg-[#1e293b] lg:bg-transparent ${cert.courseRemoved ? 'opacity-50 cursor-not-allowed' : 'text-slate-300 hover:text-cyan-400 hover:border-cyan-500/50 cursor-pointer'} rounded-xl lg:rounded-lg text-base transition-colors shadow-sm lg:shadow-none`}
                       title={t('certs.action_share')}
                     >
                       🔗 {isMobile() ? t('certs.action_share') : ''}
                     </button>
-                    {shareOpen === cert.certNo && (
+                    {shareOpen === cert.certNo && !cert.courseRemoved && (
                       <div className="absolute bottom-full right-0 mb-2 w-44 bg-[#0f172a] border border-[#334155] rounded-xl shadow-2xl overflow-hidden z-50">
                         <div className="px-3 py-2 text-[9px] font-black uppercase tracking-widest text-slate-500 border-b border-slate-800">{t('certs.action_share')}</div>
                         <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(`${origin}/verify/${cert.certNo}`)}`} target="_blank"

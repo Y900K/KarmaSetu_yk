@@ -46,7 +46,7 @@ function TraineeDashboardContent() {
   const { setIsOpen } = useChatbot();
   const [tipIndex, setTipIndex] = useState(0);
   const [feed, setFeed] = useState<DashboardFeed>(EMPTY_FEED);
-  const currentTip = feed.safetyTips.length > 0 ? feed.safetyTips[tipIndex % feed.safetyTips.length] : t('tip.loading');
+  const currentTip = feed.safetyTips.length > 0 ? feed.safetyTips[tipIndex % feed.safetyTips.length] : 'Loading safety intelligence…';
 
   React.useEffect(() => {
     let active = true;
@@ -100,7 +100,7 @@ function TraineeDashboardContent() {
     isLoading 
   } = useGlobalStats();
   
-  const { identity } = useTraineeIdentity();
+  const { identity, loading: identityLoading } = useTraineeIdentity();
 
   const studyHours = Math.round(courses.reduce((sum, course) => sum + (course.completedBlocks || 0), 0) * 0.75);
   const safetyAlertCount = feed.upcomingEvents.filter((event) => event.mandatory).length;
@@ -115,7 +115,7 @@ function TraineeDashboardContent() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h1 className="text-3xl font-black text-white tracking-tight mb-2">
-            {hour < 12 ? '☀️' : hour < 18 ? '🌤️' : '🌙'} {t('dashboard.welcome')}, <span className="text-cyan-400">{identity?.name?.split(' ')[0] || 'Trainee'}</span>
+            {hour < 12 ? '☀️' : hour < 18 ? '🌤️' : '🌙'} {t('dashboard.welcome')}, <span className="text-cyan-400">{identityLoading || !identity?.name ? <span className="inline-block w-32 h-8 bg-cyan-900/40 rounded-lg animate-pulse align-middle ml-2" /> : (identity?.name?.split(' ')[0] || 'Trainee')}</span>
           </h1>
           <div className="flex items-center gap-3">
              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
@@ -173,7 +173,7 @@ function TraineeDashboardContent() {
                         className="h-full bg-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.6)]"
                      />
                   </div>
-                  <span className="text-[11px] font-black text-slate-400 tracking-wider">RESUME UNIT 0{Math.ceil(resumeCourse.progress / 20)}</span>
+                  <span className="text-[11px] font-black text-slate-400 tracking-wider">RESUME UNIT 0{Math.max(1, Math.ceil(resumeCourse.progress / 20))}</span>
                </div>
             </div>
 
@@ -191,40 +191,44 @@ function TraineeDashboardContent() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
           label={t('stats.mandatory')}
-          value={isLoading ? '...' : `${mandatoryTrainingPct}%`}
+          value={isLoading ? <div className="h-8 w-16 bg-white/10 animate-pulse rounded-lg" /> : `${mandatoryTrainingPct}%`}
           icon={<Shield className="h-6 w-6 text-amber-500" />}
           themeColor="amber"
           valueColor="text-amber-500"
+          href="/trainee/training"
           sub={t('stats.mandatory_desc')}
           subColor="text-amber-500/60"
           delay={0}
         />
         <KPICard
           label="COURSES FINISHED"
-          value={isLoading ? '...' : completedCoursesCount}
+          value={isLoading ? <div className="h-8 w-16 bg-white/10 animate-pulse rounded-lg" /> : completedCoursesCount}
           icon={<GraduationCap className="h-6 w-6 text-emerald-500" />}
           themeColor="emerald"
           valueColor="text-emerald-500"
+          href="/trainee/certificates"
           sub="Verified Registry"
           subColor="text-emerald-500/60"
           delay={150}
         />
         <KPICard
           label="TELEMETRY LOGS"
-          value={isLoading ? '...' : `${studyHours}h`}
+          value={isLoading ? <div className="h-8 w-16 bg-white/10 animate-pulse rounded-lg" /> : `${studyHours}h`}
           icon={<Clock className="h-6 w-6 text-blue-500" />}
           themeColor="blue"
           valueColor="text-blue-500"
+          href="/trainee/analytics"
           sub="Platform Interaction"
           subColor="text-blue-500/60"
           delay={300}
         />
         <KPICard
           label="CRITICAL ALERTS"
-          value={safetyAlertCount}
+          value={isLoading ? <div className="h-8 w-16 bg-white/10 animate-pulse rounded-lg" /> : safetyAlertCount}
           icon={<AlertTriangle className="h-6 w-6 text-rose-500" />}
           themeColor="red"
           valueColor="text-rose-500"
+          href="/trainee/feedback"
           sub="Response Required"
           subColor="text-rose-500/60"
           delay={450}

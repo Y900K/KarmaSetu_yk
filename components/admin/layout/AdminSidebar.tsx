@@ -89,7 +89,9 @@ export default function AdminSidebar({ isOpen, onClose, isCollapsed }: AdminSide
                   href={item.href}
                   prefetch
                   scroll={false}
-                  onClick={onClose}
+                  onClick={() => {
+                    if (window.innerWidth < 1024) onClose();
+                  }}
                   onMouseEnter={() => prefetchSWRData(item.href)}
                   className={`flex items-center gap-3 px-4 py-3 text-sm rounded-r-lg mb-0.5 transition-all duration-300 group overflow-hidden ${
                     active

@@ -6,6 +6,14 @@ type OpsMetricKey =
   | 'sarvam_tts_error'
   | 'sarvam_asr_timeout'
   | 'sarvam_asr_error'
+  | 'openrouter_buddy_chat_success'
+  | 'openrouter_buddy_chat_error'
+  | 'openrouter_practice_quiz_success'
+  | 'openrouter_practice_quiz_error'
+  | 'openrouter_admin_quiz_success'
+  | 'openrouter_admin_quiz_error'
+  | 'openrouter_thumbnail_keywords_success'
+  | 'openrouter_thumbnail_keywords_error'
   | 'health_check';
 
 type OpsMetricsStore = {
@@ -28,6 +36,14 @@ function createStore(): OpsMetricsStore {
       sarvam_tts_error: 0,
       sarvam_asr_timeout: 0,
       sarvam_asr_error: 0,
+      openrouter_buddy_chat_success: 0,
+      openrouter_buddy_chat_error: 0,
+      openrouter_practice_quiz_success: 0,
+      openrouter_practice_quiz_error: 0,
+      openrouter_admin_quiz_success: 0,
+      openrouter_admin_quiz_error: 0,
+      openrouter_thumbnail_keywords_success: 0,
+      openrouter_thumbnail_keywords_error: 0,
       health_check: 0,
     },
   };

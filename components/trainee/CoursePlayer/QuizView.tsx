@@ -5,7 +5,7 @@ import { Course } from '@/data/coursePlayerDummyData';
 
 interface QuizViewProps {
   course: Course;
-  onComplete: (score: number, passed: boolean, reason: 'manual' | 'auto_timeout') => void;
+  onComplete: (score: number, passed: boolean, reason: 'manual' | 'auto_timeout', userAnswers: Record<number, number>) => void;
   onExit: () => void;
 }
 
@@ -23,7 +23,7 @@ export default function QuizView({ course, onComplete, onExit }: QuizViewProps) 
     });
     const percent = Math.round((score / quiz.questions.length) * 100);
     const passed = percent >= course.passingScore;
-    onComplete(score, passed, reason);
+    onComplete(score, passed, reason, answers);
   }, [answers, course.passingScore, onComplete, quiz.questions]);
 
   // Timer loop

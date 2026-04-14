@@ -11,7 +11,7 @@ import { ROLE_OPTIONS, DEPT_OPTIONS } from '@/data/mockAdminData';
 import { getPasswordPolicyError, PASSWORD_POLICY_MESSAGE } from '@/lib/auth/passwordPolicy';
 import { useAPI } from '@/lib/hooks/useAPI';
 import TableSkeleton from '@/components/admin/shared/TableSkeleton';
-import { Search, Eye, EyeOff, Trash, BookPlus, X, Send, Download, Plus, SearchX, SlidersHorizontal, ArrowUpDown, Key } from 'lucide-react';
+import { Search, Eye, EyeOff, Trash, BookPlus, X, Send, Download, Plus, SearchX, SlidersHorizontal, ArrowUpDown, Key, CheckCircle2, Ban } from 'lucide-react';
 
 type UserRow = {
   id: string;
@@ -21,6 +21,7 @@ type UserRow = {
   role: string;
   progress: number;
   status: 'Active' | 'Overdue' | 'Inactive';
+  approvalStatus?: 'approved' | 'restricted' | 'pending';
   lastLogin: string;
   phone: string;
 };
@@ -87,16 +88,21 @@ export default function UsersPage() {
   const tabs = useMemo(
     () => [
       { label: 'All', count: users.length, filter: '' },
-      { label: 'Active', count: users.filter((t) => t.status === 'Active').length, filter: 'Active' },
-      { label: 'Overdue', count: users.filter((t) => t.status === 'Overdue').length, filter: 'Overdue' },
-      { label: 'Inactive', count: users.filter((t) => t.status === 'Inactive').length, filter: 'Inactive' },
+      { label: 'Pending Review', count: users.filter((t) => t.approvalStatus === 'pending').length, filter: 'Pending' },
+      { label: 'Active', count: users.filter((t) => t.status === 'Active' && t.approvalStatus !== 'pending').length, filter: 'Active' },
+      { label: 'Overdue', count: users.filter((t) => t.status === 'Overdue' && t.approvalStatus !== 'pending').length, filter: 'Overdue' },
+      { label: 'Inactive', count: users.filter((t) => t.status === 'Inactive' && t.approvalStatus !== 'pending').length, filter: 'Inactive' },
     ],
     [users]
   );
 
   const filtered = useMemo(() => {
     let list = users;
-    if (activeTab) list = list.filter((t) => t.status === activeTab);
+    if (activeTab === 'Pending') {
+      list = list.filter((t) => t.approvalStatus === 'pending');
+    } else if (activeTab) {
+      list = list.filter((t) => t.status === activeTab && t.approvalStatus !== 'pending');
+    }
     if (search) list = list.filter((t) => t.name.toLowerCase().includes(search.toLowerCase()) || t.email.toLowerCase().includes(search.toLowerCase()));
     if (roleFilter) list = list.filter((t) => t.role === roleFilter);
     if (deptFilter) list = list.filter((t) => t.department === deptFilter);
@@ -153,6 +159,24 @@ export default function UsersPage() {
       showToast('Trainee deleted', 'error');
     } catch (error) {
       showToast(error instanceof Error ? error.message : 'Failed to delete trainee', 'error');
+    }
+  };
+
+  const updateApprovalStatus = async (userId: string, newStatus: 'approved' | 'restricted') => {
+    try {
+      const response = await fetch(`/api/admin/users/${encodeURIComponent(userId)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ approvalStatus: newStatus }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.ok) {
+        throw new Error(data.message || 'Failed to update approval status');
+      }
+      mutateUsers();
+      showToast(`User status updated to ${newStatus}`, 'success');
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Failed to update approval status', 'error');
     }
   };
 
@@ -365,9 +389,17 @@ export default function UsersPage() {
       )}
 
       {/* Table Section */}
-      {isUsersLoading ? (
-        <div className="bg-[#1e293b] border border-[#334155] rounded-2xl overflow-hidden animate-pulse">
+      {isUsersLoading || (!userData && !coursesError) ? (
+        <div className="bg-[#1e293b] border border-[#334155] rounded-2xl overflow-hidden">
           <table className="w-full min-w-[900px]">
+             <thead>
+                <tr className="border-b border-white/5 bg-slate-900/50 animate-pulse">
+                  <th className="px-6 py-4 text-left w-12"><div className="h-4 w-4 bg-slate-700 rounded mx-auto" /></th>
+                  {['Trainee','Role','Department','Progress','Status','Last Login','Actions'].map(h => (
+                    <th key={h} className="px-3 py-4 text-left"><div className="h-2 w-16 bg-slate-700 rounded" /></th>
+                  ))}
+                </tr>
+              </thead>
             <tbody>
               <TableSkeleton rows={8} cols={8} />
             </tbody>
@@ -430,14 +462,23 @@ export default function UsersPage() {
                         <span className="text-[11px] font-mono text-slate-300">{t.progress}%</span>
                       </div>
                     </td>
-                    <td className="px-3 py-4"><StatusBadge status={t.status} /></td>
+                    <td className="px-3 py-4"><StatusBadge status={t.approvalStatus === 'pending' ? 'Pending' : t.approvalStatus === 'restricted' ? 'Restricted' : t.status} /></td>
                     <td className="px-3 py-4 text-[10px] text-slate-500 font-mono whitespace-nowrap">{t.lastLogin}</td>
                     <td className="px-3 py-4">
                       <div className="flex gap-1.5">
-                        <button onClick={() => openHistory(t)} className="h-8 w-8 rounded-lg flex items-center justify-center bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white transition-all text-xs cursor-pointer shadow-sm" title="View History"><Eye className="h-4 w-4" /></button>
-                        <button onClick={() => setAssignUser(t)} className="h-8 w-8 rounded-lg flex items-center justify-center bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all text-xs cursor-pointer shadow-sm" title="Assign Course"><BookPlus className="h-4 w-4" /></button>
-                        <button disabled={isResettingPw} onClick={() => resetPassword(t.id)} className="h-8 w-8 rounded-lg flex items-center justify-center bg-amber-500/10 text-amber-400 hover:bg-amber-500 hover:text-white transition-all text-xs cursor-pointer shadow-sm disabled:opacity-50" title="Reset Password"><Key className="h-4 w-4" /></button>
-                        <button onClick={() => deleteUser(t.id)} className="h-8 w-8 rounded-lg flex items-center justify-center bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all text-xs cursor-pointer shadow-sm" title="Delete"><Trash className="h-4 w-4" /></button>
+                        {t.approvalStatus === 'pending' ? (
+                          <>
+                            <button onClick={() => updateApprovalStatus(t.id, 'approved')} className="h-8 w-8 rounded-lg flex items-center justify-center bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all text-xs cursor-pointer shadow-sm" title="Approve"><CheckCircle2 className="h-4 w-4" /></button>
+                            <button onClick={() => updateApprovalStatus(t.id, 'restricted')} className="h-8 w-8 rounded-lg flex items-center justify-center bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all text-xs cursor-pointer shadow-sm" title="Restrict"><Ban className="h-4 w-4" /></button>
+                          </>
+                        ) : (
+                          <>
+                            <button onClick={() => openHistory(t)} className="h-8 w-8 rounded-lg flex items-center justify-center bg-blue-500/10 text-blue-400 hover:bg-blue-500 hover:text-white transition-all text-xs cursor-pointer shadow-sm" title="View History"><Eye className="h-4 w-4" /></button>
+                            <button onClick={() => setAssignUser(t)} className="h-8 w-8 rounded-lg flex items-center justify-center bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all text-xs cursor-pointer shadow-sm" title="Assign Course"><BookPlus className="h-4 w-4" /></button>
+                            <button disabled={isResettingPw} onClick={() => resetPassword(t.id)} className="h-8 w-8 rounded-lg flex items-center justify-center bg-amber-500/10 text-amber-400 hover:bg-amber-500 hover:text-white transition-all text-xs cursor-pointer shadow-sm disabled:opacity-50" title="Reset Password"><Key className="h-4 w-4" /></button>
+                            <button onClick={() => deleteUser(t.id)} className="h-8 w-8 rounded-lg flex items-center justify-center bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-all text-xs cursor-pointer shadow-sm" title="Delete"><Trash className="h-4 w-4" /></button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>

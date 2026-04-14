@@ -231,12 +231,13 @@ export async function POST(request: Request) {
     let forcePasswordChange = false;
 
     if (typeof user.passwordHash !== 'string' || !verifySecret(password, user.passwordHash)) {
-      // Recovery Code Fallback (2-minute auto-expiry logic)
+      // Recovery Code Fallback (Admin 2-minute auto-expiry Temporary Password)
       const resets = db.collection(COLLECTIONS.passwordResets);
       const resetCode = await resets.findOne({
         userId: user._id.toString(),
         code: password,
-        expiresAt: { $gt: new Date() }
+        expiresAt: { $gt: new Date() },
+        createdByAdmin: true
       });
 
       if (!resetCode) {

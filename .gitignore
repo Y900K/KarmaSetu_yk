@@ -54,3 +54,4 @@ next-env.d.ts
 # local editor/project machine files
 .vscode/
 .kilocodemodes
+public/uploads/

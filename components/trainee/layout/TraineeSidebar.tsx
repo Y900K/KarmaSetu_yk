@@ -15,6 +15,7 @@ import {
   User,
   X,
   Bot,
+  BarChart3,
 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useTraineeIdentity } from '@/context/TraineeIdentityContext';
@@ -24,6 +25,7 @@ import { jsonFetcher } from '@/lib/hooks/useAPI';
 
 const prefetchSWRData = (href: string) => {
   if (href === '/trainee/dashboard' || href === '/trainee/training') preload('/api/trainee/training/overview', jsonFetcher);
+  if (href === '/trainee/analytics') preload('/api/trainee/analytics', jsonFetcher);
   if (href === '/trainee/certificates') preload('/api/trainee/certificates', jsonFetcher);
   if (href === '/trainee/leaderboard') preload('/api/trainee/leaderboard', jsonFetcher);
   if (href === '/trainee/feedback') preload('/api/trainee/feedback', jsonFetcher);
@@ -36,6 +38,7 @@ const navSections = [
     items: [
       { key: 'nav.dashboard', href: '/trainee/dashboard', icon: LayoutDashboard },
       { key: 'nav.training', href: '/trainee/training', icon: GraduationCap },
+      { key: 'nav.analytics', href: '/trainee/analytics', icon: BarChart3 },
       { key: 'nav.practice_quiz', href: '/trainee/practice-quiz', icon: Brain },
     ],
   },
@@ -65,7 +68,7 @@ export default function TraineeSidebar({ isOpen, onClose, isCollapsed }: Trainee
   const pathname = usePathname();
   const router = useRouter();
   const { t } = useLanguage();
-  const { identity } = useTraineeIdentity();
+  const { identity, loading } = useTraineeIdentity();
   const { isBuddyVisible, setIsBuddyVisible } = useChatbot();
 
   const isActive = (href: string) =>
@@ -109,7 +112,7 @@ export default function TraineeSidebar({ isOpen, onClose, isCollapsed }: Trainee
       </div>
 
       {/* Nav sections */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+      <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6 scrollbar-hide">
         {navSections.map((section) => (
           <div key={section.label}>
             <div className={`px-4 mb-2 text-[10px] text-cyan-500/70 uppercase tracking-widest font-black overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'opacity-0 h-0 hidden' : 'opacity-100'}`}>
@@ -145,7 +148,7 @@ export default function TraineeSidebar({ isOpen, onClose, isCollapsed }: Trainee
       </nav>
       
       {/* Buddy AI Toggle */}
-      <div className={`px-4 pt-4 pb-6 flex justify-center`}>
+      <div className={`mt-auto px-4 pt-4 pb-4 flex justify-center border-t border-white/5`}>
         <button
           onClick={() => setIsBuddyVisible(!isBuddyVisible)}
           title={isCollapsed ? t('admin.sidebar.buddy_assistant') : ''}
@@ -180,12 +183,12 @@ export default function TraineeSidebar({ isOpen, onClose, isCollapsed }: Trainee
             <div className="absolute bottom-2 left-6 h-2.5 w-2.5 bg-emerald-500 border-2 border-[#0a1628] rounded-full z-10 shadow-[0_0_5px_rgba(16,185,129,0.5)]"></div>
             
             <div className="h-10 w-10 rounded-full bg-gradient-to-br from-slate-700 to-slate-900 border border-slate-600 flex items-center justify-center text-sm font-bold text-white shrink-0 group-hover:border-cyan-500/50 group-hover:shadow-[0_0_10px_rgba(34,211,238,0.2)] transition-all">
-              {identity.initials}
+              {loading ? <div className="h-4 w-4 bg-white/20 rounded-full animate-pulse" /> : identity.initials}
             </div>
             
             <div className={`flex-1 min-w-0 transition-all duration-300 ${isCollapsed ? 'w-0 opacity-0 hidden' : 'w-auto opacity-100'}`}>
               <div className="text-sm font-bold text-white truncate group-hover:text-cyan-400 transition-colors">
-                {identity.name?.split(' ')[0] || 'Trainee'} {identity.name?.split(' ')[1] || ''}
+                {loading ? <div className="h-4 w-24 bg-white/10 rounded animate-pulse" /> : `${identity.name?.split(' ')[0] || 'Trainee'} ${identity.name?.split(' ')[1] || ''}`}
               </div>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">TRAINEE</span>

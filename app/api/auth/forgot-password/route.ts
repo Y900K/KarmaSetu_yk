@@ -74,7 +74,7 @@ export async function POST(request: Request) {
     }
 
     const code = generateResetCode();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 mins
 
     await db.collection(COLLECTIONS.passwordResets).updateOne(
       { userId: user._id.toString() },
@@ -84,6 +84,7 @@ export async function POST(request: Request) {
           code,
           expiresAt,
           createdAt: new Date(),
+          createdByAdmin: false
         },
       },
       { upsert: true }

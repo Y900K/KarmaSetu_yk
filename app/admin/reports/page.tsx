@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line } from 'recharts';
 import PageHeader from '@/components/admin/shared/PageHeader';
 import KPICard from '@/components/admin/shared/KPICard';
 import { useAPI } from '@/lib/hooks/useAPI';
@@ -65,8 +65,9 @@ function progressWidthClass(progress: number): string {
   return `ks-progress-${snapped}`;
 }
 
-function renderLegendLabel(value: string): React.ReactNode {
-  return <span className="ks-reports-legend-text">{value}</span>;
+function renderLegendLabel(value: unknown): React.ReactNode {
+  const label = typeof value === 'string' ? value : (value && typeof value === 'object' && 'name' in value ? String((value as { name: string }).name) : String(value ?? ''));
+  return <span className="ks-reports-legend-text">{label}</span>;
 }
 
 export default function ReportsPage() {
@@ -299,11 +300,70 @@ export default function ReportsPage() {
     });
 
     return [
-      { name: 'High', value: bands.High, color: '#10b981' },
-      { name: 'Medium', value: bands.Medium, color: '#f59e0b' },
-      { name: 'At Risk', value: bands['At Risk'], color: '#ef4444' },
+      { name: 'High (80+)', value: bands.High, color: '#10b981' },
+      { name: 'Medium (60-79)', value: bands.Medium, color: '#3b82f6' },
+      { name: 'At Risk (<60)', value: bands['At Risk'], color: '#ef4444' },
       { name: 'Unscored', value: bands.Unscored, color: '#64748b' },
     ];
+  }, [analyticsRows]);
+
+  const weeklyComparisonData = useMemo(() => {
+    const data: Record<string, { name: string; current: number; previous: number }> = {};
+    const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    weekdays.forEach(d => data[d] = { name: d, current: 0, previous: 0 });
+
+    const now = new Date();
+    const oneWeekAgo = new Date(now); oneWeekAgo.setDate(now.getDate() - 7);
+    const twoWeeksAgo = new Date(now); twoWeeksAgo.setDate(now.getDate() - 14);
+
+    analyticsRows.forEach(row => {
+      const date = new Date(row.createdAt);
+      const dayName = weekdays[date.getDay()];
+      if (date >= oneWeekAgo) {
+        data[dayName].current++;
+      } else if (date >= twoWeeksAgo) {
+        data[dayName].previous++;
+      }
+    });
+
+    return Object.values(data);
+  }, [analyticsRows]);
+
+  const funnelData = useMemo(() => {
+    const counts = { assigned: 0, in_progress: 0, completed: 0 };
+    analyticsRows.forEach(row => {
+      if (row.action.includes('assigned')) counts.assigned++;
+      if (row.action.includes('progress') || row.action === 'enrolled') counts.in_progress++;
+      if (row.action.includes('complete')) counts.completed++;
+    });
+    return [
+      { name: 'Assigned', value: counts.assigned, color: '#6366f1' },
+      { name: 'In Progress', value: counts.in_progress, color: '#06b6d4' },
+      { name: 'Completed', value: counts.completed, color: '#10b981' },
+    ].filter(v => v.value > 0);
+  }, [analyticsRows]);
+
+  const topTraineeData = useMemo(() => {
+    const userStats: Record<string, { name: string; count: number; scoreSum: number; scoreCount: number }> = {};
+    analyticsRows.forEach(row => {
+      if (!userStats[row.userId]) {
+        userStats[row.userId] = { name: row.userName || 'Unknown User', count: 0, scoreSum: 0, scoreCount: 0 };
+      }
+      userStats[row.userId].count++;
+      if (typeof row.score === 'number') {
+        userStats[row.userId].scoreSum += row.score;
+        userStats[row.userId].scoreCount++;
+      }
+    });
+
+    return Object.values(userStats)
+      .map(u => ({
+        name: u.name,
+        interactions: u.count,
+        avgScore: u.scoreCount > 0 ? Math.round(u.scoreSum / u.scoreCount) : 0
+      }))
+      .sort((a, b) => b.interactions - a.interactions)
+      .slice(0, 5);
   }, [analyticsRows]);
 
   const forensicInsights = useMemo(() => {
@@ -476,188 +536,86 @@ export default function ReportsPage() {
             </tbody>
           </table>
         </div>
-        {!isAuditLoading && analyticsRows.length > 10 && (
-          <div className="mt-6 flex justify-center pt-2">
-            <button
-               onClick={() => setShowAllRecords(!showAllRecords)}
-               className="text-[10px] font-black tracking-widest uppercase px-6 py-2.5 bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all border border-white/10 rounded-xl cursor-pointer"
-            >
-              {showAllRecords ? "Show Summarized Log" : `Show Complete Historical Audit (${analyticsRows.length} Rows)`}
-            </button>
-          </div>
-        )}
       </div>
 
-      {/* Advanced Telemetry Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Daily Activity Area Chart */}
-        <div className="bg-[#0f172a]/40 backdrop-blur-xl border border-white/5 rounded-2xl p-6 flex flex-col h-[400px] shadow-2xl group transition-all duration-500 hover:border-cyan-500/20">
-          <div className="flex items-center justify-between mb-8">
-            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.5)] animate-pulse"></span>
-              Platform Interaction momentum
-            </h3>
-            <div className="text-[9px] font-black text-cyan-400 bg-cyan-500/10 px-2.5 py-1 rounded-full border border-cyan-500/20 tracking-widest">
-              TELEMETRY STREAM
-            </div>
-          </div>
-          
-          <div className="flex-1 min-h-0">
-            {dailyActivityData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={dailyActivityData} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
-                  <defs>
-                    <linearGradient id="colorInteractions" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                  <XAxis dataKey="date" tick={{ fill: '#64748b', fontSize: 9, fontWeight: 700 }} axisLine={false} tickLine={false} dy={10} />
-                  <YAxis tick={{ fill: '#64748b', fontSize: 9, fontWeight: 700 }} axisLine={false} tickLine={false} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Area type="monotone" dataKey="interactions" stroke="#06b6d4" strokeWidth={3} fillOpacity={1} fill="url(#colorInteractions)" activeDot={{ r: 6, fill: '#06b6d4', stroke: '#fff', strokeWidth: 2 }} />
-                </AreaChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-slate-600 text-[10px] font-black uppercase tracking-widest">Synchronizing sensors...</div>
-            )}
-          </div>
-        </div>
-
-        {/* Action Distribution Pie Chart */}
-        <div className="bg-[#0f172a]/40 backdrop-blur-xl border border-white/5 rounded-2xl p-6 flex flex-col h-[400px] shadow-2xl group transition-all duration-500 hover:border-amber-500/20">
-          <div className="flex items-center justify-between mb-8">
-            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)] animate-pulse"></span>
-              Industrial Action Index
-            </h3>
-            <div className="text-[9px] font-black text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-full border border-amber-500/20 tracking-widest">
-              DISTRIBUTION
-            </div>
-          </div>
-
-          <div className="flex-1 min-h-0 relative">
-            {actionDistributionData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={actionDistributionData}
-                    cx="50%"
-                    cy="45%"
-                    innerRadius={75}
-                    outerRadius={105}
-                    paddingAngle={6}
-                    dataKey="value"
-                    stroke="none"
-                    animationDuration={1500}
-                  >
-                    {actionDistributionData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend verticalAlign="bottom" iconType="circle" className="ks-reports-pie-legend" formatter={renderLegendLabel} />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-slate-600 text-[10px] font-black uppercase tracking-widest">Analyzing event stream...</div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Throughput + Score Bands Side-by-Side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div className="bg-[#0f172a]/40 backdrop-blur-xl border border-white/5 rounded-2xl p-5 h-[320px] shadow-2xl transition-all duration-500 hover:border-blue-500/20 group">
+      {/* Experimental Advanced Charts Section 2 */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+         {/* Weekly Comparison Line Chart */}
+         <div className="bg-[#0f172a]/40 backdrop-blur-xl border border-white/5 rounded-2xl p-6 flex flex-col h-[350px] shadow-2xl transition-all duration-500 hover:border-indigo-500/20 group">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)] animate-pulse"></span>
-              Critical Training Throughput
+              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)] animate-pulse"></span>
+              Weekly Interaction delta
             </h3>
-            <div className="text-[9px] font-black text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded-full border border-blue-500/20 tracking-widest uppercase">
-              Productivity Analysis
-            </div>
+            <div className="text-[9px] font-black text-indigo-400 bg-indigo-500/10 px-2 py-1 rounded-full border border-indigo-500/20 tracking-tighter">W-o-W STATUS</div>
           </div>
-
-          <div className="w-full h-[230px]">
-            {courseInteractionData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={courseInteractionData} margin={{ top: 10, right: 10, bottom: 10, left: -20 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                  <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 800 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: '#64748b', fontSize: 9, fontWeight: 700 }} axisLine={false} tickLine={false} allowDecimals={false} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="interactions" radius={[6, 6, 0, 0]}>
-                    {courseInteractionData.map((entry, index) => (
-                      <Cell key={`throughput-${index}`} fill={RAW_COLORS[index % RAW_COLORS.length]} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-slate-600 text-[10px] font-black uppercase tracking-widest text-center">Not enough data to calculate<br/>throughput patterns.</div>
-            )}
+          <div className="flex-1 h-[220px]">
+            <ResponsiveContainer width="100%" height="100%" minHeight={220}>
+              <LineChart data={weeklyComparisonData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                <XAxis dataKey="name" tick={{ fill: '#64748b', fontSize: 9, fontWeight: 700 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: '#64748b', fontSize: 9, fontWeight: 700 }} axisLine={false} tickLine={false} />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend iconType="circle" />
+                <Line type="monotone" name="This Week" dataKey="current" stroke="#06b6d4" strokeWidth={3} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                <Line type="monotone" name="Last Week" dataKey="previous" stroke="#64748b" strokeWidth={2} strokeDasharray="5 5" dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-        <div className="bg-[#0f172a]/40 backdrop-blur-xl border border-white/5 rounded-2xl p-5 h-[320px] shadow-2xl transition-all duration-500 hover:border-emerald-500/20">
+        {/* Enrollment Funnel Donut */}
+        <div className="bg-[#0f172a]/40 backdrop-blur-xl border border-white/5 rounded-2xl p-6 flex flex-col h-[350px] shadow-2xl transition-all duration-500 hover:border-emerald-500/20 group">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse"></span>
-              Score Quality Bands
+              Conversion Pipeline
             </h3>
-            <div className="text-[9px] font-black text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20 tracking-widest">
-              PERFORMANCE MIX
-            </div>
           </div>
-          <div className="w-full h-[230px]">
-            {scoreBandData.some((row) => row.value > 0) ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={scoreBandData} margin={{ top: 10, right: 10, bottom: 10, left: -20 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                  <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 800 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: '#64748b', fontSize: 9, fontWeight: 700 }} axisLine={false} tickLine={false} allowDecimals={false} />
+          <div className="flex-1 h-[220px]">
+             <ResponsiveContainer width="100%" height="100%" minHeight={220}>
+                <PieChart>
+                  <Pie
+                    data={funnelData}
+                    innerRadius={60}
+                    outerRadius={90}
+                    paddingAngle={8}
+                    dataKey="value"
+                    stroke="none"
+                    labelLine={false}
+                    label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
+                  >
+                    {funnelData.map((entry, index) => <Cell key={`funnel-${index}`} fill={entry.color} />)}
+                  </Pie>
+                  <Tooltip />
+                  <Legend verticalAlign="bottom" iconType="circle" />
+                </PieChart>
+             </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Top Trainees Horizontal Bar */}
+        <div className="bg-[#0f172a]/40 backdrop-blur-xl border border-white/5 rounded-2xl p-6 flex flex-col h-[350px] shadow-2xl transition-all duration-500 hover:border-amber-500/20 group">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)] animate-pulse"></span>
+              Elite Performance Index
+            </h3>
+          </div>
+          <div className="flex-1 h-[250px]">
+             <ResponsiveContainer width="100%" height="100%" minHeight={250}>
+                <BarChart data={topTraineeData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
+                  <XAxis type="number" hide />
+                  <YAxis dataKey="name" type="category" tick={{ fill: '#94a3b8', fontSize: 9, fontWeight: 700 }} axisLine={false} tickLine={false} width={80} />
                   <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="value" radius={[6, 6, 0, 0]}>
-                    {scoreBandData.map((entry, index) => (
-                      <Cell key={`score-band-${index}`} fill={entry.color} />
-                    ))}
-                  </Bar>
+                  <Bar dataKey="interactions" name="Interactions" fill="#f59e0b" radius={[0, 4, 4, 0]} barSize={20} />
                 </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-slate-600 text-[10px] font-black uppercase tracking-widest text-center">
-                No scored assessments available yet.
-              </div>
-            )}
+             </ResponsiveContainer>
           </div>
         </div>
       </div>
 
       {/* Narrative Insight Footer */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-        <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/5 p-4">
-          <div className="text-[10px] uppercase tracking-widest text-cyan-400 font-black mb-2">Behavioral Signal</div>
-          <p className="text-sm text-slate-300 leading-relaxed">
-            Most activity concentrates around <span className="text-white font-semibold">{insightSummary.topActionName}</span>, indicating this workflow is currently driving platform throughput.
-          </p>
-        </div>
-        <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4">
-          <div className="text-[10px] uppercase tracking-widest text-amber-400 font-black mb-2">Quality Watch</div>
-          <p className="text-sm text-slate-300 leading-relaxed">
-            Low-score incidence is <span className="text-white font-semibold">{insightSummary.lowScoreRate}%</span>. Prioritize remediation on high-interaction courses to improve outcomes fastest.
-          </p>
-        </div>
-        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4">
-          <div className="text-[10px] uppercase tracking-widest text-emerald-400 font-black mb-2">Action Recommendation</div>
-          <p className="text-sm text-slate-300 leading-relaxed">
-            Use peak window <span className="text-white font-semibold">{insightSummary.peakDayLabel}</span> for nudges and deploy targeted follow-ups where progress is below <span className="text-white font-semibold">{insightSummary.avgProgress}%</span>.
-          </p>
-        </div>
-      </div>
-
-      {/* Forensic Analysis Notes */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
         <div className="rounded-2xl border border-blue-500/20 bg-blue-500/5 p-4">
           <div className="text-[10px] uppercase tracking-widest text-blue-400 font-black mb-2">Admin Control Share</div>

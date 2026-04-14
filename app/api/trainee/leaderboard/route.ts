@@ -17,15 +17,19 @@ type LeaderboardRow = {
 };
 
 function initials(name: string): string {
+  if (!name || typeof name !== 'string') return '??';
   return name
-    .split(' ')
+    .trim()
+    .split(/\s+/)
     .map((part) => part[0])
+    .filter(Boolean)
     .join('')
     .toUpperCase()
     .slice(0, 2);
 }
 
-function badgeForRank(rank: number): { badge: string | null; badgeColor: string | null } {
+function badgeForRank(rank: number, pts: number): { badge: string | null; badgeColor: string | null } {
+  if (pts <= 0) return { badge: null, badgeColor: null };
   if (rank === 1) return { badge: 'Gold', badgeColor: '#f59e0b' };
   if (rank === 2) return { badge: 'Silver', badgeColor: '#94a3b8' };
   if (rank === 3) return { badge: 'Bronze', badgeColor: '#f97316' };
@@ -52,11 +56,44 @@ export async function GET(request: Request) {
           completedCount: number;
           totalCount: number;
         }>([
+          // Join against courses to exclude deleted ones
+          {
+            $addFields: {
+              courseIdStr: { $toString: '$courseId' }
+            }
+          },
+          {
+            $addFields: {
+              courseObjId: { 
+                $cond: { 
+                  if: { $regexMatch: { input: '$courseIdStr', regex: /^[0-9a-fA-F]{24}$/ } }, 
+                  then: { $toObjectId: '$courseIdStr' }, 
+                  else: null 
+                } 
+              }
+            }
+          },
+          {
+            $lookup: {
+              from: COLLECTIONS.courses,
+              localField: 'courseObjId',
+              foreignField: '_id',
+              as: 'courseData'
+            }
+          },
+          // Filter out enrollments whose course is deleted
+          {
+            $match: {
+              $or: [
+                { 'courseData.isDeleted': { $ne: true } },
+                { courseData: { $size: 0 } } // Keep if no course found (orphaned)
+              ]
+            }
+          },
           {
             $group: {
               _id: '$userId',
               avgProgress: { $avg: '$progressPct' },
-              // ONLY count completed entries if they are truly marked "completed"
               completedCount: {
                 $sum: {
                   $cond: [{ $eq: ['$status', 'completed'] }, 1, 0],
@@ -76,8 +113,19 @@ export async function GET(request: Request) {
         .toArray(),
     ]);
 
-    const enrollmentMap = new Map(enrollmentStats.map((entry) => [entry._id, entry]));
-    const certMap = new Map(certificates.map((entry) => [entry._id, entry.certCount]));
+    const enrollmentMap = new Map();
+    enrollmentStats.forEach((entry) => {
+      if (entry._id) {
+        enrollmentMap.set(entry._id.toString(), entry);
+      }
+    });
+
+    const certMap = new Map();
+    certificates.forEach((entry) => {
+      if (entry._id) {
+        certMap.set(entry._id.toString(), entry.certCount);
+      }
+    });
 
     const scoredUsers = users.map((user) => {
       const id = user._id.toString();
@@ -110,7 +158,8 @@ export async function GET(request: Request) {
 
     const leaderboard: LeaderboardRow[] = scoredUsers.map((user, index) => {
       const rank = index + 1;
-      const badge = badgeForRank(rank);
+      const badge = badgeForRank(rank, user.pts);
+      const selfId = session.user?._id?.toString();
 
       return {
         rank,
@@ -123,13 +172,14 @@ export async function GET(request: Request) {
         badge: badge.badge,
         badgeColor: badge.badgeColor,
         lastActivityAt: user.lastActivityAt,
-        isCurrentUser: user.id === session.user._id.toString(),
+        isCurrentUser: selfId ? user.id === selfId : false,
       };
     });
 
     return NextResponse.json({ ok: true, leaderboard });
   } catch (error) {
     const details = error instanceof Error ? error.message : 'Unknown error';
+    console.error("[Leaderboard API] Fatal Error:", details);
     return NextResponse.json(
       {
         ok: false,

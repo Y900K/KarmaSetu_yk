@@ -152,6 +152,12 @@ export default function CoursesPage() {
 
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showModal, setShowModal] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; courseId: string | null; isBulk: boolean }>({
+    isOpen: false,
+    courseId: null,
+    isBulk: false,
+  });
   const [editingCourse, setEditingCourse] = useState<CourseRow | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
 
@@ -159,17 +165,38 @@ export default function CoursesPage() {
   const toggleSelectAll = () => setSelected((prev) => prev.length === courses.length ? [] : courses.map((c) => c.id));
 
   const handleBulkDelete = async () => {
-    let deleted = 0;
-    for (const id of selected) {
-      try {
-        const res = await fetch(`/api/admin/courses/${encodeURIComponent(id)}`, { method: 'DELETE' });
-        const data = await res.json().catch(() => ({}));
-        if (res.ok && data.ok) deleted++;
-      } catch { /* skip */ }
+    setDeleteConfirmation({ isOpen: true, courseId: null, isBulk: true });
+  };
+
+  const confirmDeletion = async () => {
+    try {
+      setIsBulkDeleting(true);
+      if (deleteConfirmation.isBulk) {
+        const response = await fetch('/api/admin/courses/bulk-delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ courseIds: selected }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.ok) throw new Error(data.message || 'Bulk delete failed');
+        showToast(`${data.count || selected.length} course(s) deleted`, 'error');
+        setSelected([]);
+      } else if (deleteConfirmation.courseId) {
+        const response = await fetch(`/api/admin/courses/${encodeURIComponent(deleteConfirmation.courseId)}`, {
+          method: 'DELETE',
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || !data.ok) throw new Error(data.message || 'Delete failed');
+        showToast('Course deleted', 'error');
+      }
+      
+      await mutateCourses();
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Deletion failed', 'error');
+    } finally {
+      setIsBulkDeleting(false);
+      setDeleteConfirmation({ isOpen: false, courseId: null, isBulk: false });
     }
-    setSelected([]);
-    showToast(`${deleted} course(s) deleted`, 'error');
-    await mutateCourses();
   };
 
   const handleBulkAssign = async () => {
@@ -203,23 +230,7 @@ export default function CoursesPage() {
   };
 
   const handleDelete = async (courseId: string) => {
-    if (!window.confirm('Are you sure you want to delete this course? This action cannot be undone.')) {
-      return;
-    }
-    try {
-      const response = await fetch(`/api/admin/courses/${encodeURIComponent(courseId)}`, {
-        method: 'DELETE',
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok || !data.ok) {
-        throw new Error(data.message || 'Failed to delete course');
-      }
-
-      showToast('Course deleted', 'error');
-      await mutateCourses();
-    } catch (error) {
-      showToast(error instanceof Error ? error.message : 'Failed to delete course', 'error');
-    }
+    setDeleteConfirmation({ isOpen: true, courseId, isBulk: false });
   };
 
   return (
@@ -232,19 +243,57 @@ export default function CoursesPage() {
             <div className="flex border border-[#334155] rounded-lg overflow-hidden">
               <button 
                 onClick={() => setViewMode('grid')} 
-                className={`p-2 transition-colors cursor-pointer ${viewMode === 'grid' ? 'bg-cyan-500 text-slate-900' : 'text-slate-400 hover:text-white'}`}
+                className={`p-2 transition-colors cursor-pointer ${viewMode === 'grid' ? 'bg-cyan-500 text-slate-900 border-none' : 'text-slate-400 hover:text-white border-none bg-transparent'}`}
                 aria-label="Grid view"
               ><LayoutGrid className="h-4 w-4" /></button>
               <button 
                 onClick={() => setViewMode('list')} 
-                className={`p-2 transition-colors cursor-pointer ${viewMode === 'list' ? 'bg-cyan-500 text-slate-900' : 'text-slate-400 hover:text-white'}`}
+                className={`p-2 transition-colors cursor-pointer ${viewMode === 'list' ? 'bg-cyan-500 text-slate-900 border-none' : 'text-slate-400 hover:text-white border-none bg-transparent'}`}
                 aria-label="List view"
               ><List className="h-4 w-4" /></button>
             </div>
-            <button onClick={handleCreate} className="flex items-center gap-2 px-4 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-semibold text-sm rounded-xl cursor-pointer transition-colors"><Plus className="h-4 w-4" /> {t('admin.courses.new_course')}</button>
+            <button onClick={handleCreate} className="flex items-center gap-2 px-4 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-semibold text-sm rounded-xl cursor-pointer transition-colors border-none"><Plus className="h-4 w-4" /> {t('admin.courses.new_course')}</button>
           </div>
         }
       />
+
+      {/* Delete Confirmation Modal */}
+      <Modal 
+        isOpen={deleteConfirmation.isOpen} 
+        onClose={() => setDeleteConfirmation({ ...deleteConfirmation, isOpen: false })}
+        title="CONFIRM DELETION"
+        maxWidth="max-w-md"
+      >
+        <div className="text-center p-2">
+          <div className="h-16 w-16 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 mx-auto mb-6 border border-red-500/20">
+            <Trash className="h-8 w-8 text-red-400/80" />
+          </div>
+          <h3 className="text-xl font-bold text-white mb-2">Are you sure?</h3>
+          <p className="text-slate-400 text-sm mb-8 leading-relaxed">
+            {deleteConfirmation.isBulk 
+              ? `You are about to delete ${selected.length} courses. ` 
+              : "You are about to delete this training course. "}
+            All trainee enrollment results for this content will be archived and marked as expired. 
+            <span className="block mt-2 font-bold text-red-400/60 uppercase tracking-tighter text-[10px]">This action cannot be undone.</span>
+          </p>
+          <div className="flex gap-3">
+            <button 
+              onClick={() => setDeleteConfirmation({ ...deleteConfirmation, isOpen: false })}
+              className="flex-1 px-4 py-3 rounded-xl bg-slate-800 text-slate-300 font-bold text-sm hover:bg-slate-700 transition-colors border-none cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={confirmDeletion}
+              disabled={isBulkDeleting}
+              className="flex-1 px-4 py-3 rounded-xl bg-red-500 text-white font-bold text-sm hover:bg-red-400 transition-all flex items-center justify-center gap-2 border-none cursor-pointer active:scale-95 disabled:opacity-50 disabled:active:scale-100"
+            >
+              {isBulkDeleting ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Trash className="h-4 w-4" />}
+              {isBulkDeleting ? 'Deleting...' : 'Delete Now'}
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Bulk Actions */}
       {selected.length > 0 && (
@@ -259,7 +308,7 @@ export default function CoursesPage() {
 
       {viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {isLoading && [...Array(6)].map((_, i) => (
+          {(isLoading || (!coursesData && !coursesError)) && [...Array(6)].map((_, i) => (
             <div key={`skel-${i}`} className="bg-[#1e293b] border border-[#334155] rounded-2xl overflow-hidden animate-pulse">
               <div className="h-28 bg-slate-700/50" />
               <div className="p-4 space-y-3">
@@ -270,7 +319,7 @@ export default function CoursesPage() {
               </div>
             </div>
           ))}
-          {courses.map((course) => (
+          {!isLoading && coursesData && courses.map((course) => (
             <div key={course.id} className={`bg-[#1e293b] border rounded-2xl overflow-hidden transition-all duration-200 hover:-translate-y-1 hover:border-cyan-500/40 hover:shadow-[0_0_0_1px_#06b6d4] ${selected.includes(course.id) ? 'border-cyan-500 ring-1 ring-cyan-500/30' : 'border-[#334155]'}`}>
               {/* Thumbnail */}
               <div className={`h-28 bg-gradient-to-br ${course.theme} flex items-center justify-center relative`}>
@@ -301,20 +350,28 @@ export default function CoursesPage() {
                 </div>
               </div>
               {/* Footer */}
-              <div className="border-t border-[#1e293b] px-4 py-3 flex justify-end gap-1">
-                 <button onClick={() => handleEdit(course)} title="Edit course" aria-label="Edit course" className="h-7 w-7 rounded-lg flex items-center justify-center text-cyan-400 hover:bg-cyan-500/10 text-xs cursor-pointer"><Pencil className="h-3.5 w-3.5" /></button>
-                <button onClick={() => handleDelete(course.id)} title="Delete course" aria-label="Delete course" className="h-7 w-7 rounded-lg flex items-center justify-center text-red-400 hover:bg-red-500/10 text-xs cursor-pointer"><Trash className="h-3.5 w-3.5" /></button>
-              </div>
+                <div className="border-t border-[#1e293b] px-4 py-3 flex justify-end gap-1 relative z-10">
+                  <button onClick={() => handleEdit(course)} title="Edit course" aria-label="Edit course" className="h-7 w-7 rounded-lg flex items-center justify-center text-cyan-400 hover:bg-cyan-500/10 text-xs cursor-pointer border-none bg-transparent active:scale-95 transition-transform"><Pencil className="h-3.5 w-3.5" /></button>
+                  <button onClick={() => handleDelete(course.id)} title="Delete course" aria-label="Delete course" className="h-7 w-7 rounded-lg flex items-center justify-center text-red-400 hover:bg-red-500/10 text-xs cursor-pointer border-none bg-transparent active:scale-95 transition-transform"><Trash className="h-3.5 w-3.5" /></button>
+                </div>
             </div>
           ))}
           {!isLoading && courses.length === 0 && <div className="text-sm text-slate-500">No courses found.</div>}
           {!isLoading && coursesError && <div className="text-sm text-red-400">Failed to load courses from API.</div>}
         </div>
-      ) : isLoading ? (
+      ) : (isLoading || (!coursesData && !coursesError)) ? (
         <div className="bg-[#1e293b] border border-[#334155] rounded-2xl overflow-hidden animate-pulse">
           <table className="w-full min-w-[700px]">
+             <thead>
+                <tr className="border-b border-white/5 bg-slate-900/50">
+                  <th className="px-6 py-4 text-left w-12"><div className="h-4 w-4 bg-slate-700 rounded mx-auto" /></th>
+                  {['Course','Category','Level','Modules','Enrolled','Status','Actions'].map(h => (
+                    <th key={h} className="px-3 py-4 text-left"><div className="h-2 w-16 bg-slate-700 rounded" /></th>
+                  ))}
+                </tr>
+              </thead>
             <tbody>
-              <TableSkeleton rows={8} cols={8} />
+              <TableSkeleton rows={8} cols={7} />
             </tbody>
           </table>
         </div>
@@ -698,15 +755,16 @@ function CourseModal({ isOpen, onClose, course, onSaved }: { isOpen: boolean; on
     <Modal isOpen={isOpen} onClose={onClose} title={isEdit ? "EDIT COURSE" : "CREATE NEW COURSE"} maxWidth="max-w-4xl" preserveScrollKey="admin-course-modal">
       <>
         {showPreview ? (
-          <div className="relative">
+          <div className="relative w-full h-[700px] flex flex-col p-2 sm:p-4 bg-slate-900/40 rounded-3xl overflow-hidden border border-white/5">
             <button 
               type="button"
               onClick={() => setShowPreview(false)}
-              className="absolute top-4 right-4 z-50 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl text-xs font-bold border border-white/10 backdrop-blur-md transition-all flex items-center gap-2"
+              className="absolute top-6 right-6 z-50 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl text-xs font-bold border border-white/10 backdrop-blur-md transition-all flex items-center gap-2 shadow-2xl"
             >
-              <X className="h-4 w-4" /> Exit Preview
+              <X className="h-4 w-4" /> Exit Preview Mode
             </button>
-            <div className="h-[600px] overflow-y-auto no-scrollbar rounded-2xl border border-white/5">
+            
+            <div className="flex-1 overflow-y-auto custom-scrollbar rounded-2xl">
               <CourseOverview 
                 course={previewCourse}
                 onBegin={() => setShowPreview(false)} 
@@ -715,6 +773,7 @@ function CourseModal({ isOpen, onClose, course, onSaved }: { isOpen: boolean; on
                   documentsCount: pdfUrls.filter(u => u.trim()).length,
                   quizQuestionsCount: questions.length
                 })}
+                isPreview={true}
               />
             </div>
           </div>
@@ -769,7 +828,8 @@ function CourseModal({ isOpen, onClose, course, onSaved }: { isOpen: boolean; on
                       type="button"
                       onClick={async (e) => {
                         e.preventDefault();
-                        if (!title.trim()) { 
+                        const trimmedTitle = title.trim();
+                        if (!trimmedTitle) { 
                           showToast('Please enter course title first!', 'error'); 
                           return; 
                         }
@@ -778,7 +838,7 @@ function CourseModal({ isOpen, onClose, course, onSaved }: { isOpen: boolean; on
                           const res = await fetch('/api/admin/courses/generate-thumbnail', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ title }),
+                            body: JSON.stringify({ title: trimmedTitle }),
                           });
                           const data = await res.json();
                           if (data.ok) { 
@@ -1290,6 +1350,7 @@ Assign Globally (Auto-enroll all current and future Trainees)
               videoDurations: safeVideoDurations,
               pdfUrls: safePdfUrls,
               theme: selectedTheme,
+              status: 'Active',
               modules: Math.max(safeVideoUrls.length, safePdfUrls.length, 1),
               quiz: { questions },
             };

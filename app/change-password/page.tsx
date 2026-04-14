@@ -40,8 +40,8 @@ export default function ChangePasswordPage() {
 
       setSuccess(true);
       setTimeout(() => {
-        router.push('/trainee/dashboard');
-      }, 2000);
+        router.push('/login');
+      }, 2500);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -76,7 +76,7 @@ export default function ChangePasswordPage() {
                 <CheckCircle2 className="w-10 h-10 text-emerald-400" />
               </div>
               <h2 className="text-2xl font-bold text-white mb-2">Password Secured</h2>
-              <p className="text-slate-400 text-sm mb-6">Your permanent password has been updated. Redirecting to your dashboard...</p>
+              <p className="text-slate-400 text-sm mb-6">Your permanent password has been updated. Please sign in with your new password...</p>
               <div className="flex justify-center">
                 <div className="h-1 w-32 bg-slate-800 rounded-full overflow-hidden">
                   <motion.div 

@@ -53,7 +53,7 @@ function ageInDays(value: string): number {
 
 export default function AnnouncementsPage() {
   const { showToast } = useToast();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [showModal, setShowModal] = useState(false);
   const [activeFilter, setActiveFilter] = useState<'all' | 'recent' | 'HIGH' | 'INFO' | 'REMINDER' | 'URGENT'>('all');
   const [announcements, setAnnouncements] = useState<AnnouncementRow[]>([]);
@@ -232,7 +232,7 @@ export default function AnnouncementsPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <KPICard label={t('admin.announcements.kpi.total_active')} value={baseAnnouncements.length} icon={<Megaphone className="h-6 w-6 text-cyan-400" />} themeColor="cyan" valueColor="text-cyan-400" />
         <KPICard label={t('admin.announcements.kpi.recent_7d')} value={thisWeekCount} icon={<Calendar className="h-6 w-6 text-blue-400" />} themeColor="blue" valueColor="text-blue-400" />
-        <KPICard label={t('admin.announcements.kpi.audience_reached')} value={audienceReached} icon={<Users className="h-6 w-6 text-emerald-400" />} themeColor="emerald" valueColor="text-emerald-400" />
+        <KPICard label={t('admin.announcements.kpi.audience_reached')} value={isLoadingAnnouncements ? '...' : audienceReached} icon={<Users className="h-6 w-6 text-emerald-400" />} themeColor="emerald" valueColor="text-emerald-400" />
       </div>
 
       <div className="flex flex-wrap gap-2 mb-4">
@@ -272,7 +272,7 @@ export default function AnnouncementsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className="text-xs text-slate-500">{ann.date}</span>
+                  <span className="text-xs text-slate-500">{new Date(ann.date).toLocaleString(language === 'HINGLISH' ? 'hi-IN' : 'en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</span>
                   <button title={t('admin.announcements.edit')} aria-label={t('admin.announcements.edit')} className="h-7 w-7 rounded-lg flex items-center justify-center text-cyan-400 hover:bg-cyan-500/10 text-xs cursor-pointer"><Pencil className="h-3.5 w-3.5" /></button>
                   <button
                     onClick={async () => {
@@ -405,6 +405,9 @@ function NewAnnouncementModal({
         )}
         <button
           onClick={async () => {
+             // AA2: Prevent duplicate submissions within a short 5-second window
+            if (isSubmitting) return;
+
             try {
               setIsSubmitting(true);
 
@@ -435,8 +438,7 @@ function NewAnnouncementModal({
               setTimeout(onClose, 600);
             } catch (error) {
               showToast(error instanceof Error ? error.message : 'Failed to create announcement', 'error');
-            } finally {
-              setIsSubmitting(false);
+              setIsSubmitting(false); // Only allow re-submission if it failed
             }
           }}
           disabled={isSubmitting}

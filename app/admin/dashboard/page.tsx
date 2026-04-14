@@ -11,7 +11,7 @@ import TraineeStatusDonut from '@/components/admin/overview/TraineeStatusDonut';
 import PerformanceInsights from '@/components/admin/overview/PerformanceInsights';
 import AlertsSection from '@/components/admin/overview/AlertsSection';
 import FeedbackSnapshot from '@/components/admin/overview/FeedbackSnapshot';
-import { Users, CheckCircle2, GraduationCap, Award } from 'lucide-react';
+import { Users, CheckCircle2, GraduationCap, Award, ShieldCheck } from 'lucide-react';
 
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -28,41 +28,45 @@ function DashboardContent() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <KPICard
-          label={t('admin.kpi.total_trainees')}
-          value={isLoading ? '...' : adminStats?.totalTrainees ?? 0}
-          icon={<Users className="h-6 w-6 text-cyan-400" />}
+        <KPICard 
+          label={t('admin.kpi.total_trainees')} 
+          value={isLoading ? <div className="h-8 w-16 bg-white/10 animate-pulse rounded-lg" /> : (adminStats?.totalTrainees ?? 0)} 
+          icon={<Users className="h-6 w-6 text-cyan-400" />} 
           themeColor="cyan" 
-          valueColor="text-cyan-400"
+          valueColor="text-cyan-400" 
+          href="/admin/users"
           sub={`${adminStats?.overdueTrainees ?? 0} ${t('admin.kpi.overdue')}`}
           subColor="text-amber-400"
-          delay={0}
+          delay={0} 
         />
-        <KPICard
-          label={t('admin.kpi.compliance')}
-          value={isLoading ? '...' : adminStats?.compliance ?? '0%'}
-          icon={<CheckCircle2 className="h-6 w-6 text-amber-400" />}
-          themeColor="amber"
-          valueColor="text-amber-400"
+        <KPICard 
+          label={t('admin.kpi.compliance')} 
+          value={isLoading ? <div className="h-8 w-16 bg-white/10 animate-pulse rounded-lg" /> : (adminStats?.compliance ?? '0%')} 
+          icon={<ShieldCheck className="h-6 w-6 text-amber-400" />} 
+          themeColor="amber" 
+          valueColor="text-amber-400" 
+          href="/admin/compliance"
           sub={parseInt(adminStats?.compliance ?? '0') < 80 ? t('admin.kpi.needs_attention') : t('admin.kpi.good_standing')}
           subColor="text-amber-400"
           delay={200}
         />
         <KPICard
           label={t('admin.kpi.active_courses')}
-          value={isLoading ? '...' : adminStats?.activeCourses ?? 0}
+          value={isLoading ? <div className="h-8 w-16 bg-white/10 animate-pulse rounded-lg" /> : (adminStats?.activeCourses ?? 0)}
           icon={<GraduationCap className="h-6 w-6 text-blue-400" />}
           themeColor="blue"
           valueColor="text-blue-400"
+          href="/admin/courses"
           sub={`${adminStats?.totalCourses ?? 0} ${t('admin.kpi.total_courses')}`}
           delay={400}
         />
         <KPICard
           label={t('admin.kpi.valid_certificates')}
-          value={isLoading ? '...' : adminStats?.validCertificates ?? 0}        
+          value={isLoading ? <div className="h-8 w-16 bg-white/10 animate-pulse rounded-lg" /> : (adminStats?.validCertificates ?? 0)}        
           icon={<Award className="h-6 w-6 text-emerald-400" />}
           themeColor="emerald"
           valueColor="text-emerald-400"
+          href="/admin/certificates"
           sub={t('admin.kpi.verified_registry')}
           subColor="text-emerald-400"
           delay={600}

@@ -13,7 +13,7 @@ type RawQuizQuestion = {
 
 export type CourseThumbnailMeta = {
   sourceUrl?: string;
-  provider?: 'sarvam_unsplash' | 'manual_import' | 'legacy_seed' | 'generated_fallback';
+  provider?: 'ai_generated' | 'sarvam_unsplash' | 'manual_import' | 'legacy_seed' | 'generated_fallback';
   keywords?: string[];
   importedAt?: string;
   generatedAt?: string;

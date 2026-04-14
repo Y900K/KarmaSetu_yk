@@ -18,6 +18,56 @@ const INDUSTRIAL_MAPPING: Record<string, string> = {
   maintenance: '1517048676732-d65bc937f952',
 };
 
+const POLLINATIONS_TIMEOUT_MS = 30000;
+
+/**
+ * Generate a unique AI thumbnail using Pollinations.ai (free, no API key required).
+ * Returns the downloaded image URL or null if generation fails.
+ */
+async function generateAIThumbnail(title: string, keywords: string[]): Promise<string | null> {
+  const prompt = encodeURIComponent(
+    `professional industrial training course thumbnail, ${title}, ${keywords.join(', ')}, modern clean design, dark blue and teal color scheme, high quality, photorealistic`
+  );
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const imageUrl = `https://image.pollinations.ai/prompt/${prompt}?width=1200&height=675&nologo=true&seed=${Date.now() + attempt}`;
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), POLLINATIONS_TIMEOUT_MS);
+
+      const response = await fetch(imageUrl, {
+        signal: controller.signal,
+        headers: { Accept: 'image/*' },
+      });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        console.warn(`[Thumbnail] Pollinations returned HTTP ${response.status} on attempt ${attempt + 1}`);
+        continue;
+      }
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType?.startsWith('image/')) {
+        console.warn(`[Thumbnail] Pollinations returned non-image content-type: ${contentType}`);
+        continue;
+      }
+
+      const buffer = Buffer.from(await response.arrayBuffer());
+      if (buffer.length < 5000) {
+        console.warn(`[Thumbnail] Pollinations image too small (${buffer.length} bytes) — likely error`);
+        continue;
+      }
+
+      // Return the URL — importThumbnailAsset will download and store it
+      return imageUrl;
+    } catch (error) {
+      console.warn(`[Thumbnail] Pollinations.ai failed on attempt ${attempt + 1}:`, error instanceof Error ? error.message : 'Unknown');
+    }
+  }
+  return null;
+}
+
 function resolveSourceCandidates(keywords: string[]) {
   const primaryKeyword = keywords.find((keyword) => INDUSTRIAL_MAPPING[keyword]) || keywords[0] || 'safety';
   const photoId = INDUSTRIAL_MAPPING[primaryKeyword];
@@ -34,6 +84,22 @@ function resolveSourceCandidates(keywords: string[]) {
 async function importGeneratedThumbnail(title: string, keywords: string[]) {
   let lastError: Error | null = null;
 
+  // Step 1: Try Pollinations.ai (AI-generated unique image)
+  const aiUrl = await generateAIThumbnail(title, keywords);
+  if (aiUrl) {
+    try {
+      return await importThumbnailAsset(aiUrl, {
+        title,
+        provider: 'ai_generated',
+        keywords,
+      });
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error('AI thumbnail import failed');
+      console.warn('[Thumbnail] AI image download failed, falling back to Unsplash:', lastError.message);
+    }
+  }
+
+  // Step 2: Try Unsplash (hardcoded industrial photo mapping)
   for (const sourceUrl of resolveSourceCandidates(keywords)) {
     try {
       return await importThumbnailAsset(sourceUrl, {
@@ -46,6 +112,7 @@ async function importGeneratedThumbnail(title: string, keywords: string[]) {
     }
   }
 
+  // Step 3: SVG fallback (always works)
   if (lastError) {
     console.warn('[Generate Thumbnail] Falling back to generated SVG:', lastError.message);
   }

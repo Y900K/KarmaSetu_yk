@@ -9,8 +9,10 @@ import ChatbotHeader from './ChatbotHeader';
 import ChatbotMessages from './ChatbotMessages';
 import SuggestedQuestions from './SuggestedQuestions';
 import ChatbotInput from './ChatbotInput';
+import { usePathname } from 'next/navigation';
 
 export default function ChatbotWidget() {
+  const pathname = usePathname();
   const { isOpen, setIsOpen, isBuddyVisible, setIsBuddyVisible } = useChatbot();
   const constraintsRef = React.useRef(null);
   const [isMounted, setIsMounted] = React.useState(false);
@@ -28,7 +30,10 @@ export default function ChatbotWidget() {
 
   if (!isMounted) return null;
 
-  if (!isBuddyVisible) return null;
+  // Reduced clutter: hide the floating orb on pages that already have native AI integration
+  const isExcludedPage = pathname?.includes('/practice-quiz');
+  
+  if (!isBuddyVisible || isExcludedPage) return null;
 
   return (
     <>
@@ -52,7 +57,7 @@ export default function ChatbotWidget() {
           }}
           role="button"
           tabIndex={0}
-          className="fixed z-[99] bottom-4 right-3 flex h-20 w-20 items-center justify-center transition-all duration-200 cursor-grab group sm:bottom-5 sm:right-5 sm:h-24 sm:w-24 md:bottom-8 md:right-8 md:h-[104px] md:w-[104px]"
+          className="fixed z-[100] bottom-20 right-4 flex h-20 w-20 items-center justify-center transition-all duration-200 cursor-grab group sm:bottom-6 sm:right-6 sm:h-24 sm:w-24 md:bottom-8 md:right-8 md:h-[104px] md:w-[104px]"
           aria-label="Open Buddy AI Assistant chatbot"
         >
           <div className="relative w-full h-full flex items-center justify-center isolate">
@@ -83,7 +88,7 @@ export default function ChatbotWidget() {
             >
               <X className="h-5 w-5" />
             </button>
-
+ 
             {/* The image is now natively transparent via Node.js processing */}
             <Image
               src="/yk_mascot.png" 
@@ -95,7 +100,7 @@ export default function ChatbotWidget() {
           </div>
         </motion.div>
       )}
-
+ 
       {/* CHAT WINDOW (when open) */}
       <AnimatePresence>
         {isOpen && (
@@ -105,16 +110,16 @@ export default function ChatbotWidget() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[99] cursor-pointer bg-black/50 md:hidden"
+              className="fixed inset-0 z-[101] cursor-pointer bg-black/50 md:hidden"
               onClick={() => setIsOpen(false)}
             />
-
+ 
             <motion.div
               initial={{ opacity: 0, y: '20px', scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: '20px', scale: 0.95 }}
               transition={{ duration: 0.25, ease: 'easeOut' }}
-              className={`fixed bottom-0 left-0 right-0 z-[100] border border-white/10 bg-[#020817]/85 backdrop-blur-2xl shadow-[0_25px_50px_rgba(0,0,0,0.5),0_0_15px_rgba(6,182,212,0.15)] flex flex-col overflow-hidden rounded-t-2xl md:left-auto md:bottom-24 md:right-6 md:h-[min(700px,80vh)] md:w-[380px] lg:w-[420px] md:rounded-2xl ${
+              className={`fixed bottom-0 left-0 right-0 z-[102] border border-white/10 bg-[#020817]/85 backdrop-blur-2xl shadow-[0_25px_50px_rgba(0,0,0,0.5),0_0_15px_rgba(6,182,212,0.15)] flex flex-col overflow-hidden rounded-t-2xl md:left-auto md:bottom-24 md:right-6 md:h-[min(700px,80vh)] md:w-[380px] lg:w-[420px] md:rounded-2xl ${
                 isMobileCollapsed ? 'h-[140px]' : 'h-[min(85vh,100dvh-2rem)]'
               }`}
               role="dialog"

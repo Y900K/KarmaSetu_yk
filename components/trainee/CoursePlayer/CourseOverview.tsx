@@ -9,15 +9,16 @@ interface CourseOverviewProps {
   course: Course;
   onBegin: () => void;
   estimatedDuration: string;
+  isPreview?: boolean;
 }
 
-export default function CourseOverview({ course, onBegin, estimatedDuration }: CourseOverviewProps) {
+export default function CourseOverview({ course, onBegin, estimatedDuration, isPreview = false }: CourseOverviewProps) {
   return (
-    <div className="min-h-full bg-[#0a1520] flex flex-col items-center justify-center p-6 sm:p-12 animate-in fade-in duration-700">
-      <div className="max-w-4xl w-full grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-[#0d1b2a] rounded-3xl overflow-hidden shadow-2xl border border-white/5">
+    <div className={isPreview ? "w-full h-full animate-in fade-in duration-700" : "min-h-full bg-[#0a1520] flex flex-col items-center justify-center p-6 sm:p-12 animate-in fade-in duration-700"}>
+      <div className={`w-full flex flex-wrap items-stretch overflow-hidden shadow-2xl ${isPreview ? 'bg-[#0f172a] rounded-2xl border border-white/5' : 'max-w-4xl bg-[#0d1b2a] rounded-3xl border border-white/5'}`}>
         
-        {/* Left: Industrial Imagery & Stats */}
-        <div className="relative h-64 md:h-full min-h-[350px] overflow-hidden group">
+        {/* Left: Huge Focal Imagery & Stats */}
+        <div className="flex-1 basis-[400px] min-w-0 relative h-72 md:h-auto min-h-[400px] flex flex-col justify-end overflow-hidden group">
           <Image unoptimized width={1200} height={600} 
             src={course.thumbnail || 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80'} 
             alt={course.title} 
@@ -40,7 +41,7 @@ export default function CourseOverview({ course, onBegin, estimatedDuration }: C
         </div>
 
         {/* Right: Content & CTA */}
-        <div className="p-6 sm:p-10 flex flex-col h-full">
+        <div className={`flex-1 basis-[350px] min-w-0 flex flex-col h-full ${isPreview ? 'p-4' : 'p-6 sm:p-10'}`}>
           <div className="mb-2">
             <span className="text-[10px] font-black text-cyan-500 uppercase tracking-[0.2em]">{course.category}</span>
             <h1 className="text-2xl sm:text-3xl font-bold text-white mt-1 leading-tight">{course.title}</h1>

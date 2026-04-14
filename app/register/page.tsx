@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -59,19 +59,35 @@ export default function RegisterPage() {
     setStep('profile');
   };
 
+  const [loadingStep, setLoadingStep] = useState(0);
+  const loadingMessages = [
+    'Initializing Secure Channel...',
+    'Building Industrial Profile...',
+    'Verifying Facility Access...',
+    'Syncing Certification Data...',
+    'Finalizing Setup...'
+  ];
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 12000);
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
 
     try {
       setError('');
       setDepartmentError('');
       setIsLoading(true);
+      setLoadingStep(0);
+
+      // Start a cycle of loading messages
+      const intervalId = setInterval(() => {
+        setLoadingStep(prev => (prev < loadingMessages.length - 1 ? prev + 1 : prev));
+      }, 1500);
 
       if (!formData.department.trim()) {
         setDepartmentError('Please select your primary department to continue.');
         setIsLoading(false);
+        clearInterval(intervalId);
         return;
       }
 
@@ -96,14 +112,16 @@ export default function RegisterPage() {
         throw new Error(data.message || 'Registration failed');
       }
 
+      setLoadingStep(loadingMessages.length - 1);
+      clearInterval(intervalId);
+
       localStorage.setItem('traineeName', data.user?.fullName || formData.fullName || 'New User');
+      
+      // Artificial delay for UX feel (premium "building" feel)
+      await new Promise(resolve => setTimeout(resolve, 800));
       router.push('/trainee/dashboard');
     } catch (err) {
-      if (err instanceof Error && err.name === 'AbortError') {
-        setError('Request timed out. Please try again.');
-      } else {
-        setError(err instanceof Error ? err.message : 'Registration failed.');
-      }
+      setError(err instanceof Error ? err.message : 'Registration failed.');
     } finally {
       clearTimeout(timeoutId);
       setIsLoading(false);
@@ -183,10 +201,17 @@ export default function RegisterPage() {
           <AnimatePresence mode="wait">
             {step === 'identity' && (
               <motion.div key="identity" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+                {/* Visual Step Indicator */}
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="flex-1 h-1.5 rounded-full bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.4)]" />
+                  <div className="flex-1 h-1.5 rounded-full bg-slate-800" />
+                  <div className="flex-1 h-1.5 rounded-full bg-slate-800" />
+                </div>
+
                 <div className="mb-4 pt-2">
-                  <h2 className="text-2xl font-bold text-white mb-1.5">Create Account</h2>
-                  <p className="text-slate-400 text-[13px]">
-                    Enter your details to create a new profile.
+                  <h2 className="text-2xl font-bold text-white mb-1.5 uppercase tracking-tight">Create Account</h2>
+                  <p className="text-slate-400 text-[11px] font-bold uppercase tracking-widest\">
+                    Phase 01: Identification
                   </p>
                 </div>
                 
@@ -284,13 +309,20 @@ export default function RegisterPage() {
 
             {step === 'profile' && (
               <motion.div key="profile" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+                {/* Visual Step Indicator */}
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="flex-1 h-1.5 rounded-full bg-cyan-500" />
+                  <div className="flex-1 h-1.5 rounded-full bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.4)]" />
+                  <div className="flex-1 h-1.5 rounded-full bg-slate-800" />
+                </div>
+
                 <div className="mb-5 pt-2">
-                  <button onClick={() => setStep('identity')} className="text-slate-500 hover:text-white text-[10px] font-bold uppercase tracking-widest mb-3 inline-block transition-colors">
-                    ← Back to Email
+                  <button onClick={() => setStep('identity')} className="text-cyan-500/60 hover:text-cyan-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4 inline-flex items-center gap-2 transition-colors group">
+                    <span className="group-hover:-translate-x-1 transition-transform">←</span> Back to step 1
                   </button>
-                  <h2 className="text-2xl font-bold text-white mb-1.5">Industrial Profile</h2>
-                  <p className="text-slate-400 text-[13px]">
-                    Step 2 of 2: Job Classification
+                  <h2 className="text-2xl font-bold text-white mb-1.5 uppercase tracking-tight">Industrial Profile</h2>
+                  <p className="text-slate-400 text-[11px] font-bold uppercase tracking-widest\">
+                    Phase 02: Job Classification
                   </p>
                 </div>
 
@@ -405,10 +437,19 @@ export default function RegisterPage() {
                       <div className="absolute inset-0 opacity-0 group-hover:opacity-20 bg-gradient-to-r from-transparent via-white to-transparent -skew-x-12 translate-x-[-150%] group-hover:translate-x-[150%] transition-transform duration-1000 ease-out" />
                       <div className="relative z-10 flex items-center justify-center gap-2">
                         {isLoading ? (
-                           <>
-                             <span className="h-5 w-5 border-2 border-current/30 border-t-current rounded-full animate-spin" />
-                             <span className="text-[13px] uppercase tracking-widest font-black">Initializing...</span>
-                           </>
+                           <div className="flex flex-col items-center">
+                             <div className="flex items-center gap-3 mb-1">
+                               <span className="h-4 w-4 border-2 border-slate-900/30 border-t-slate-900 rounded-full animate-spin" />
+                               <span className="text-[14px] uppercase tracking-widest font-black">{loadingMessages[loadingStep]}</span>
+                             </div>
+                             <div className="w-48 h-1 bg-slate-900/10 rounded-full overflow-hidden">
+                               <motion.div 
+                                 className="h-full bg-slate-900"
+                                 initial={{ width: 0 }}
+                                 animate={{ width: `${((loadingStep + 1) / loadingMessages.length) * 100}%` }}
+                               />
+                             </div>
+                           </div>
                         ) : (
                            <>
                              <span className="text-[13px] uppercase tracking-[0.15em] font-black">Complete Setup</span>

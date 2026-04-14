@@ -265,10 +265,10 @@ export async function GET(request: Request) {
         completionRates,
         deptCompliance,
         performanceInsights: [
-          { value: `${complianceRate}%`, label: 'BINARY COMPLETION RATE', color: '#f59e0b' },
+          { value: `${complianceRate}%`, label: 'OVERALL COMPLETION RATE', color: '#f59e0b' },
           { value: `${globalAvgProgress}%`, label: 'WORKFORCE AVG PROGRESS', color: '#06b6d4' },
           { value: `${avgModules}`, label: 'AVG MODULES/COURSE', color: '#f8fafc' },
-          { value: `${totalTrainees > 0 ? Math.round((totalCertificates / totalTrainees) * 100) / 100 : 0}`, label: 'CERTIFICATES/TRAINEE', color: '#10b981' },
+          { value: `${totalTrainees > 0 ? Math.round(totalCertificates / totalTrainees) : 0}`, label: 'CERTIFICATES/TRAINEE', color: '#10b981' },
         ]
       }
     }, { headers: { 'Cache-Control': 'no-store' } });

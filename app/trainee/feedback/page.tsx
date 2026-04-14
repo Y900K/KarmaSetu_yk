@@ -30,7 +30,7 @@ export default function TraineeFeedbackPage() {
   const { t, language } = useLanguage();
   const [message, setMessage] = useState('');
   const [category, setCategory] = useState<FeedbackRow['category']>('suggestion');
-  const [rating, setRating] = useState<number>(4);
+  const [rating, setRating] = useState<number>(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [rows, setRows] = useState<FeedbackRow[]>([]);
@@ -97,6 +97,8 @@ export default function TraineeFeedbackPage() {
       setNotice(t('trainee.feedback.notice_submitted'));
       showToast(t('trainee.feedback.toast_success'), 'success');
       setMessage('');
+      setCategory('suggestion');
+      setRating(0);
       await loadFeedback();
     } catch (err) {
       const fallbackMessage = t('trainee.feedback.error_retry');
@@ -168,7 +170,7 @@ export default function TraineeFeedbackPage() {
               );
             })}
           </div>
-          <div className="text-xs text-slate-400 mb-3">{rating}/5</div>
+          <div className="text-xs text-slate-400 mb-3">{rating > 0 ? `${rating}/5` : 'Select a rating'}</div>
 
           <label className="block text-xs text-slate-400 mb-1">{t('trainee.feedback.label_message')}</label>
           <textarea

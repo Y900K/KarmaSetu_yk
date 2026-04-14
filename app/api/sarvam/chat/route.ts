@@ -6,6 +6,7 @@ import { buildBuddyFallbackResponse } from '@/utils/buddyFallback';
 import { recordOpsMetric } from '@/lib/server/opsTelemetry';
 import { requireAuthenticated } from '@/lib/auth/requireAuthenticated';
 import { checkRequestRateLimit } from '@/lib/security/requestRateLimit';
+import { callAI } from '@/lib/server/aiGateway';
 
 const BASE_URL = 'https://api.sarvam.ai';
 
@@ -294,6 +295,23 @@ export async function POST(request: Request) {
 
     if (!response.ok) {
       const errData = await response.json().catch(() => ({}));
+      console.warn(`[Sarvam Chat Proxy] Sarvam returned HTTP ${response.status} — trying OpenRouter`);
+
+      // ── OpenRouter Fallback on Sarvam HTTP error ────────────────────
+      const gatewayResult = await callAI({
+        task: 'buddy_chat',
+        messages: baseMessages,
+        temperature: 0.6,
+        max_tokens: 500,
+      });
+
+      if (gatewayResult.provider !== 'static_fallback') {
+        const cleaned = cleanResponse(stripReasoningBlocks(gatewayResult.content));
+        return withCorrelation(NextResponse.json({
+          choices: [{ message: { content: enforceWordCap(cleaned, wordCap) } }],
+        }), correlationId);
+      }
+
       const safeMessage =
         response.status >= 500
         ? 'Chat provider is temporarily unavailable.'
@@ -441,6 +459,30 @@ export async function POST(request: Request) {
       message?.includes('ETIMEDOUT')
     ) {
       recordOpsMetric('sarvam_chat_timeout');
+
+      // ── OpenRouter Fallback on timeout/network error ───────────────
+      try {
+        const systemPrompt = buildSystemPrompt(isHinglish, false, false);
+        const gatewayResult = await callAI({
+          task: 'buddy_chat',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: latestUserMessage || 'Share a concise industrial safety tip.' },
+          ],
+          temperature: 0.6,
+          max_tokens: 500,
+        });
+
+        if (gatewayResult.provider !== 'static_fallback') {
+          const cleaned = cleanResponse(stripReasoningBlocks(gatewayResult.content));
+          return withCorrelation(NextResponse.json({
+            choices: [{ message: { content: cleaned } }],
+          }), correlationId);
+        }
+      } catch {
+        // fall through to static fallback
+      }
+
       recordOpsMetric('sarvam_chat_fallback');
       return withCorrelation(NextResponse.json({
         choices: [

@@ -84,6 +84,7 @@ export async function GET(request: Request) {
         issueDate: formatDate(certificate.issuedAt),
         expiry: formatDate(certificate.expiresAt),
         status,
+        courseRemoved: !course || course.isDeleted === true,
       };
     });
 

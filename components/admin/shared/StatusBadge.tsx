@@ -13,6 +13,8 @@ const styles: Record<string, string> = {
   Draft: 'bg-slate-600/30 text-slate-400 border-slate-600/50',
   'At Risk': 'bg-amber-500/15 text-amber-400 border-amber-500/30',
   'Non-Compliant': 'bg-red-500/15 text-red-400 border-red-500/30',
+  Pending: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  Restricted: 'bg-red-500/15 text-red-400 border-red-500/30',
 };
 
 export default function StatusBadge({ status }: StatusBadgeProps) {

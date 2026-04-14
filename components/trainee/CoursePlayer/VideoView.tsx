@@ -71,20 +71,38 @@ export default function VideoView({
             allowFullScreen
           />
         ) : (
-          <div className="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-center bg-[#1e2d3d] border border-[#334155]/50">
-            <span className="text-4xl mb-3">⚠️</span>
-            <p className="text-slate-300 font-medium">Video not available.</p>
-            <p className="text-sm text-slate-500">Please contact your admin.</p>
-            {lesson.youtubeURL ? (
-              <a
-                href={lesson.youtubeURL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-4 inline-flex items-center gap-2 rounded-xl border border-cyan-500/40 bg-cyan-500/10 px-4 py-2 text-xs font-bold uppercase tracking-wide text-cyan-300 hover:bg-cyan-500/20"
-              >
-                Open Source Link
-              </a>
-            ) : null}
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0d1b2a] border border-white/5 overflow-hidden">
+            {/* Background pattern */}
+            <div className="absolute inset-0 opacity-10 grid-pattern" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-500/5 blur-[100px] rounded-full" />
+            
+            <div className="relative z-10 flex flex-col items-center text-center px-8">
+              <div className="w-24 h-24 rounded-full bg-cyan-500/10 flex items-center justify-center mb-6 border border-cyan-500/20 relative">
+                 <div className="absolute inset-x-0 inset-y-0 rounded-full border border-cyan-500/40 animate-[ping_3s_linear_infinite]" />
+                 <span className="text-5xl animate-bounce">🤖</span>
+              </div>
+              <h3 className="text-2xl font-black text-white uppercase tracking-tighter mb-2 italic">Video Content Pending</h3>
+              <p className="text-slate-400 text-sm max-w-sm font-medium leading-relaxed mb-8">
+                The industrial training visual for <span className="text-cyan-400 font-bold">"{lesson.title}"</span> is currently being finalized in the secure cloud registry. 
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-4">
+                {lesson.youtubeURL && (
+                  <a
+                    href={lesson.youtubeURL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-6 py-3 bg-cyan-500 text-slate-900 font-black uppercase tracking-widest text-[11px] rounded-xl hover:bg-cyan-400 transition-all flex items-center justify-center gap-2 group/link"
+                  >
+                    <span>External Source Port</span>
+                    <span className="group-hover:translate-x-1 transition-transform">→</span>
+                  </a>
+                )}
+                <div className="px-6 py-3 border border-white/10 rounded-xl bg-white/5 text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center">
+                   Registry ID: {lesson.id.slice(-8).toUpperCase()}
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

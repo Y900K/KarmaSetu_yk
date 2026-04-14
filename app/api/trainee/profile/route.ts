@@ -22,25 +22,57 @@ export async function GET(request: Request) {
     const { db, session } = trainee;
 
     const userId = session.user._id.toString();
-    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    
-    // Automatically clean up old logs for this user older than 24h
-    await db.collection(COLLECTIONS.systemLogs).deleteMany({
-      userId,
-      timestamp: { $lt: twentyFourHoursAgo }
-    });
+    const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
 
-    const [enrollments, certificates, recentLogs] = await Promise.all([
+    const [enrollments, certificates, auditLogs] = await Promise.all([
       db.collection(COLLECTIONS.enrollments).find({ userId }).toArray(),
       db.collection(COLLECTIONS.certificates).find({ userId, status: { $ne: 'revoked' } }).toArray(),
-      db.collection(COLLECTIONS.systemLogs).find({ userId, timestamp: { $gte: twentyFourHoursAgo } }).sort({ timestamp: -1 }).limit(2).toArray()
+      db.collection(COLLECTIONS.enrollmentAudit)
+        .find({ userId, createdAt: { $gte: fortyEightHoursAgo } })
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .toArray()
     ]);
 
-    const recentActivity = recentLogs.map((log) => ({
-      text: log.action || 'Performed an action',
-      time: log.timestamp ? new Date(log.timestamp).toLocaleString() : 'Recently',
-      color: log.level === 'error' ? 'red' : log.level === 'warn' ? 'gold' : 'cyan',
-    }));
+    const allEvents: Array<{ text: string; time: string; color: string; date: Date }> = [];
+
+    for (const log of auditLogs) {
+      let text = 'Performed an activity';
+      let color = 'cyan';
+      
+      if (log.action === 'progress_updated') {
+        text = `Course progress updated to ${log.progressPct}%`;
+      } else if (log.action === 'enrolled') {
+        text = 'Enrolled in a new course';
+        color = 'gold';
+      } else if (log.action === 'completed') {
+        text = `Completed course with score ${log.score || 100}%`;
+        color = 'emerald';
+      } else if (log.action === 'assigned_by_admin') {
+        text = 'Assigned new course by Admin';
+        color = 'gold';
+      }
+
+      allEvents.push({
+        text,
+        time: log.createdAt instanceof Date ? log.createdAt.toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Recently',
+        color,
+        date: log.createdAt instanceof Date ? log.createdAt : new Date(),
+      });
+    }
+
+    const recentCerts = certificates.filter(c => c.issuedAt instanceof Date && c.issuedAt.getTime() >= fortyEightHoursAgo.getTime());
+    for (const cert of recentCerts) {
+      allEvents.push({
+        text: 'Earned a new certificate',
+        time: cert.issuedAt.toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }),
+        color: 'cyan',
+        date: cert.issuedAt,
+      });
+    }
+
+    allEvents.sort((a, b) => b.date.getTime() - a.date.getTime());
+    const recentActivity = allEvents.slice(0, 3).map(({ text, time, color }) => ({ text, time, color }));
 
     const completedCount = enrollments.filter((entry) => entry.status === 'completed').length;
     const averageProgress = enrollments.length

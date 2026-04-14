@@ -304,6 +304,7 @@ const translations: Record<Lang, Record<string, string>> = {
 
     'nav.dashboard': 'Dashboard',
     'nav.training': 'Training',
+    'nav.analytics': 'Analytics',
     'nav.practice_quiz': 'Practice Quiz',
     'nav.certificates': 'Certificates',
     'nav.leaderboard': 'Leaderboard',
@@ -756,6 +757,7 @@ const translations: Record<Lang, Record<string, string>> = {
 
     'nav.dashboard': 'डैशबोर्ड',
     'nav.training': 'ट्रेनिंग',
+    'nav.analytics': 'एनालिटिक्स',
     'nav.practice_quiz': 'प्रैक्टिस क्विज़',
     'nav.certificates': 'सर्टिफिकेट्स',
     'nav.leaderboard': 'लीडरबोर्ड',

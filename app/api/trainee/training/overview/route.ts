@@ -113,9 +113,9 @@ export async function GET(request: Request) {
       const course = courseById.get(cid);
       if (course) {
         // If a course is deleted or unpublished, hide it completely 
-        // UNLESS the trainee has already started or completed it!
+        // UNLESS the trainee has already completed it (so they keep their history/certs)
         const isHidden = course.isDeleted === true || course.isPublished === false;
-        if (isHidden && enrollment.status === 'not-started') {
+        if (isHidden && enrollment.status !== 'completed') {
           continue;
         }
         enrollmentsWithCourses.push({ enrollment: enrollment as DbEnrollment, course });
@@ -169,10 +169,14 @@ export async function GET(request: Request) {
             : [],
           passingScore: typeof course.passingScore === 'number' ? course.passingScore : 70,
           lastAccessedAt: lastAccessedAt ? lastAccessedAt.toISOString() : undefined,
+          isArchived: course.isDeleted === true || course.isPublished === false,
         };
       })
       .filter((course): course is NonNullable<typeof course> => Boolean(course))
       .sort((a, b) => {
+        if (a.isArchived && !b.isArchived) return 1;
+        if (!a.isArchived && b.isArchived) return -1;
+
         if (a.status !== b.status) {
           const order: Record<CourseStatus, number> = {
             'In Progress': 0,

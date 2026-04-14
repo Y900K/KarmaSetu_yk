@@ -60,7 +60,8 @@ export async function POST(
         $set: { 
           code,
           expiresAt,
-          createdAt: new Date()
+          createdAt: new Date(),
+          createdByAdmin: true
         } 
       },
       { upsert: true }

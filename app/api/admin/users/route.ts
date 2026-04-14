@@ -23,6 +23,7 @@ type UserRow = {
   role: string;
   progress: number;
   status: 'Active' | 'Overdue' | 'Inactive';
+  approvalStatus: 'approved' | 'restricted' | 'pending';
   lastLogin: string;
   phone: string;
 };
@@ -153,6 +154,7 @@ export async function GET(request: Request) {
         role: roleToDisplay(user.role),
         progress,
         status: computeStatus(user.isActive !== false, isOverdue),
+        approvalStatus: typeof user.approvalStatus === 'string' ? user.approvalStatus as any : 'approved',
         lastLogin: formatLastLogin(user.updatedAt),
         phone: typeof user.phone === 'string' ? user.phone : '-',
       };
@@ -247,6 +249,8 @@ export async function POST(request: Request) {
       role,
       department: body.dept?.trim() || 'General',
       company: 'KarmaSetu',
+      approvalStatus: 'approved',
+      accessLevel: 'full',
       isActive: true,
       createdAt: now,
       updatedAt: now,

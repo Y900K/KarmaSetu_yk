@@ -183,7 +183,7 @@ export async function importThumbnailAsset(sourceUrl: string, options: ImportThu
       keywords: Array.isArray(options.keywords) ? options.keywords : undefined,
       importedAt: nowIso,
       generatedAt:
-        options.provider === 'sarvam_unsplash' || options.provider === 'generated_fallback'
+        options.provider === 'ai_generated' || options.provider === 'sarvam_unsplash' || options.provider === 'generated_fallback'
           ? nowIso
           : undefined,
     } satisfies CourseThumbnailMeta,

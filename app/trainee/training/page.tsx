@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import TraineeLayout from '@/components/trainee/layout/TraineeLayout';
 import ProgressBar from '@/components/admin/shared/ProgressBar';
@@ -26,6 +26,7 @@ type TraineeCourse = {
   completedBlocks: number;
   passingScore: number;
   lastAccessedAt?: string;
+  isArchived?: boolean;
 };
 
 function TrainingContent() {
@@ -44,6 +45,8 @@ function TrainingContent() {
   }, [overviewData]);
 
   const [selectedId, setSelectedId] = useState('');
+  const [isPending, startTransition] = useTransition();
+  const [isEnrolling, setIsEnrolling] = useState(false);
 
   useEffect(() => {
     if (courses.length === 0) {
@@ -96,6 +99,7 @@ function TrainingContent() {
     }
 
     if (selected.status === 'Not Started') {
+      setIsEnrolling(true);
       try {
         const response = await fetch(`/api/trainee/enrollments/${encodeURIComponent(selected.id)}`, {
           method: 'POST',
@@ -109,16 +113,21 @@ function TrainingContent() {
         await mutateCourses();
         showToast(`Enrolled in ${selected.title}!`, 'success');
       } catch (error) {
+        setIsEnrolling(false);
         showToast(error instanceof Error ? error.message : 'Failed to enroll.', 'error');
         return;
       }
+      setIsEnrolling(false);
     }
 
-    router.push(`/trainee/course/${selected.id}`);
+    startTransition(() => {
+      router.push(`/trainee/course/${selected.id}`);
+    });
   };
 
   const CourseItem = ({ course }: { course: TraineeCourse }) => {
     const isSelected = course.id === selectedId;
+    const isArchived = course.isArchived;
 
     return (
       <button
@@ -127,15 +136,15 @@ function TrainingContent() {
           isSelected
             ? 'bg-cyan-500/[0.08] border-l-[3px] border-cyan-500'
             : 'border-l-[3px] border-transparent hover:bg-white/[0.03]'
-        }`}
+        } ${isArchived ? 'opacity-60 grayscale-[50%]' : ''}`}
       >
         <div className="relative flex-shrink-0">
           <div
-            className={`h-9 w-9 rounded-full bg-gradient-to-br ${course.theme} flex items-center justify-center text-sm shadow-sm opacity-90`}
+            className={`h-9 w-9 rounded-full bg-gradient-to-br flex items-center justify-center text-sm shadow-sm opacity-90 ${isArchived ? 'from-slate-600 to-slate-800 text-slate-400' : course.theme}`}
           >
             {course.icon}
           </div>
-          {course.status === 'Not Started' && (
+          {course.status === 'Not Started' && !isArchived && (
             <div className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-[#0f172a] border border-white/10 flex items-center justify-center text-slate-500 shadow-xl">
               <Lock className="h-2.5 w-2.5" />
             </div>
@@ -145,6 +154,7 @@ function TrainingContent() {
           <div className="text-sm font-medium text-white line-clamp-2 leading-snug">{course.title}</div>
           <div className="flex items-center gap-2 mt-1">
             <span className="text-[9px] text-slate-500 uppercase tracking-tighter">{course.category}</span>
+            {isArchived && <span className="text-[9px] px-1 py-0.5 rounded-sm bg-slate-800 text-slate-400 uppercase tracking-tighter border border-slate-700">Archived</span>}
             {course.status === 'Completed' ? (
               <span className="text-[9px] text-emerald-400 font-bold flex items-center gap-0.5">
                 <CheckCircle2 className="h-2 w-2" /> DONE
@@ -290,14 +300,20 @@ function TrainingContent() {
                 </p>
 
                 <button
-                  className={`group inline-flex items-center gap-4 px-10 py-4 ${actionConfig.color} text-[#0d1b2a] font-black uppercase tracking-widest text-xs rounded-2xl shadow-2xl transition-all hover:-translate-y-1 active:scale-95 relative z-10`}
+                  className={`group inline-flex items-center gap-4 px-10 py-4 ${selected.isArchived ? 'bg-slate-700 text-slate-400 cursor-not-allowed' : actionConfig.color + ' text-[#0d1b2a] hover:-translate-y-1 active:scale-95'} font-black uppercase tracking-widest text-xs rounded-2xl shadow-2xl transition-all relative z-10`}
                   onClick={handleCourseAction}
-                  disabled={isLoading}
+                  disabled={isLoading || isPending || isEnrolling || selected.isArchived}
                 >
-                  <span>{actionConfig.text}</span>
+                  <span>{selected.isArchived ? 'Course Archived' : (isPending || isEnrolling) ? t('training.modules.active') + '...' : actionConfig.text}</span>
+                  {!selected.isArchived && (
                   <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center group-hover:bg-white/30 transition-colors">
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    {(isPending || isEnrolling) ? (
+                      <div className="h-3.5 w-3.5 border-2 border-[#0d1b2a] border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    )}
                   </div>
+                  )}
                 </button>
               </div>
             </>

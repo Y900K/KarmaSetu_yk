@@ -118,17 +118,20 @@ export default function CourseCompletionChart() {
                 dy={10}
               />
               <YAxis
+                yAxisId="completion"
                 domain={[0, 100]}
                 tick={{ fill: '#94a3b8', fontSize: 10 }}
                 axisLine={false}
                 tickLine={false}
                 allowDecimals={false}
               />
+              <YAxis yAxisId="change" hide={true} />
               <Tooltip content={<CustomTooltip t={t} />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
-              <Bar dataKey="completion" radius={[4, 4, 0, 0]} animationBegin={200} animationDuration={900} barSize={barSize}>
+              <Bar yAxisId="completion" dataKey="completion" radius={[4, 4, 0, 0]} animationBegin={200} animationDuration={900} barSize={barSize}>
                 {data.map((entry, i) => (<Cell key={`${entry.name}-${i}`} fill={getColor(entry.completion)} />))}
               </Bar>
               <Line
+                yAxisId="change"
                 type="monotone"
                 dataKey="change"
                 stroke="#22d3ee"
