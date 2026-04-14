@@ -11,7 +11,7 @@ export async function GET(request: Request) {
     }
 
     const { db, session } = auth;
-    const userId = session.user.id;
+    const userId = session.user._id.toString();
 
     // 1. Fetch all enrollments for this user
     const enrollments = await db

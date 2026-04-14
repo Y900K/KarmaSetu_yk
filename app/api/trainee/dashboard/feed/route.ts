@@ -4,7 +4,7 @@ import { ACHIEVEMENTS, SAFETY_TIPS, UPCOMING_EVENTS } from '@/data/mockTraineeDa
 import { COLLECTIONS } from '@/lib/db/collections';
 
 type TraineeAnnouncementEvent = {
-  id: number;
+  id: string;
   title: string;
   date: string;
   time: string;
@@ -38,15 +38,16 @@ export async function GET(request: Request) {
         : ['All Departments'];
 
       return (
-        sentTo.includes('All Departments') ||
+        (sentTo.includes('All Departments') ||
         sentTo.includes('General') ||
-        sentTo.includes(userDept)
+        sentTo.includes(userDept)) &&
+        !(typeof doc.title === 'string' && doc.title.includes('Compliance Warning'))
       );
     })
-    .map((doc, idx) => {
+    .map((doc) => {
       const createdAt = doc.createdAt instanceof Date ? doc.createdAt : new Date();
       return {
-        id: idx + 1,
+        id: doc._id.toString(),
         title: typeof doc.title === 'string' ? doc.title : 'Platform Announcement',
         date: createdAt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
         time: createdAt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
@@ -55,17 +56,53 @@ export async function GET(request: Request) {
       };
     });
 
-  const mergedEvents = [...mappedAnnouncementEvents, ...UPCOMING_EVENTS]
-    .slice(0, 8);
+  const [enrollments, certificates] = await Promise.all([
+    db.collection(COLLECTIONS.enrollments).find({ userId: session.user._id.toString() }).toArray(),
+    db.collection(COLLECTIONS.certificates).find({ userId: session.user._id.toString(), status: { $ne: 'revoked' } }).toArray()
+  ]);
+
+  const completedCount = enrollments.filter(e => e.status === 'completed').length;
+  
+  // Dynamic achievements calculation
+  const dynamicAchievements = [
+    { 
+      id: 1, 
+      title: "First Course Completed", 
+      icon: "🎓", 
+      unlocked: completedCount >= 1, 
+      hint: "Complete your first safety training" 
+    },
+    { 
+      id: 2, 
+      title: "10 Quizzes Passed", 
+      icon: "📝", 
+      unlocked: completedCount >= 10, 
+      hint: "Successfully complete 10 training assessments" 
+    },
+    { 
+      id: 3, 
+      title: "Safety Champion", 
+      icon: "🏆", 
+      unlocked: completedCount >= 5, 
+      hint: "Complete 5 courses to unlock" 
+    },
+    { 
+      id: 4, 
+      title: "100% Compliance Streak", 
+      icon: "⭐", 
+      unlocked: enrollments.length > 0 && enrollments.every(e => e.status === 'completed'), 
+      hint: "Complete all assigned courses to earn this badge" 
+    },
+  ];
 
   return NextResponse.json({
     ok: true,
     feed: {
       safetyTips: SAFETY_TIPS,
       upcomingEvents: mergedEvents,
-      achievements: ACHIEVEMENTS,
+      achievements: dynamicAchievements,
       generatedAt: new Date().toISOString(),
-      version: '2026-04-10-feed-v2',
+      version: '2026-04-14-feed-dynamic',
     },
   }, { headers: { 'Cache-Control': 'no-store' } });
 }

@@ -161,8 +161,8 @@ function ComplianceContent() {
               <History className="h-6 w-6 text-cyan-500" />
             </div>
             <div>
-              <div className="text-2xl font-black text-white">24h</div>
-              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Next Sync Cycle</div>
+              <div className="text-2xl font-black text-white uppercase tracking-tighter">LIVE</div>
+              <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Sync Active</div>
             </div>
           </div>
           <div className="bg-[#0f172a]/80 backdrop-blur-xl border border-white/10 rounded-[24px] p-5 transition-all hover:bg-white/[0.05]">
@@ -170,8 +170,8 @@ function ComplianceContent() {
             <div className="space-y-2 text-xs">
               <div className="flex items-center justify-between"><span className="text-slate-400">Global Index</span><span className="font-black text-white">{complianceValue}%</span></div>
               <div className="flex items-center justify-between"><span className="text-slate-400">Dept Avg</span><span className="font-black text-cyan-400">{avgDeptCompliance}%</span></div>
-              <div className="flex items-center justify-between"><span className="text-slate-400">Top Dept</span><span className="font-black text-emerald-400">{bestDept ? `${bestDept.name} (${bestDept.compliance}%)` : 'NA'}</span></div>
-              <div className="flex items-center justify-between"><span className="text-slate-400">At-Risk Dept</span><span className="font-black text-amber-400">{worstDept ? `${worstDept.name} (${worstDept.compliance}%)` : 'NA'}</span></div>
+              <div className="flex items-center justify-between"><span className="text-slate-400">Top Dept</span><span className="font-black text-emerald-400">{bestDept && bestDept.compliance > 0 ? `${bestDept.name} (${bestDept.compliance}%)` : 'NONE'}</span></div>
+              <div className="flex items-center justify-between"><span className="text-slate-400">At-Risk Dept</span><span className="font-black text-amber-400">{worstDept && worstDept.compliance < 80 ? `${worstDept.name} (${worstDept.compliance}%)` : 'NONE'}</span></div>
             </div>
           </div>
         </div>

@@ -92,8 +92,7 @@ export async function GET(request: Request) {
 
     const allCourses = await db
       .collection(COLLECTIONS.courses)
-      // Allow deleted courses here so that past certificates/historical enrollments don't break
-      .find({ /* isPublished: { $ne: false }, isDeleted: { $ne: true } */ })
+      .find({}) // Fetch all courses to ensure historical enrollments have associated metadata
       .toArray();
 
     // Build a lookup map supporting both ObjectId and string-based courseIds
@@ -170,6 +169,7 @@ export async function GET(request: Request) {
           passingScore: typeof course.passingScore === 'number' ? course.passingScore : 70,
           lastAccessedAt: lastAccessedAt ? lastAccessedAt.toISOString() : undefined,
           isArchived: course.isDeleted === true || course.isPublished === false,
+          isDeleted: course.isDeleted === true,
         };
       })
       .filter((course): course is NonNullable<typeof course> => Boolean(course))

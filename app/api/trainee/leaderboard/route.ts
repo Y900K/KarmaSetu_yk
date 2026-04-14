@@ -81,15 +81,8 @@ export async function GET(request: Request) {
               as: 'courseData'
             }
           },
-          // Filter out enrollments whose course is deleted
-          {
-            $match: {
-              $or: [
-                { 'courseData.isDeleted': { $ne: true } },
-                { courseData: { $size: 0 } } // Keep if no course found (orphaned)
-              ]
-            }
-          },
+          // We include all enrollments regardless of course deletion status
+          // so that trainees do not lose points when an old course is archived.
           {
             $group: {
               _id: '$userId',

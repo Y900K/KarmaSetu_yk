@@ -55,7 +55,7 @@ function ProfileContent() {
     const loadProfile = async () => {
       try {
         setIsLoadingProfile(true);
-        const response = await fetch('/api/trainee/profile');
+        const response = await fetch('/api/trainee/profile', { cache: 'no-store' });
         const data = await response.json().catch(() => ({}));
 
         if (!isMounted) {

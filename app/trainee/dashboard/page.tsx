@@ -118,9 +118,11 @@ function TraineeDashboardContent() {
             {hour < 12 ? '☀️' : hour < 18 ? '🌤️' : '🌙'} {t('dashboard.welcome')}, <span className="text-cyan-400">{identityLoading || !identity?.name ? <span className="inline-block w-32 h-8 bg-cyan-900/40 rounded-lg animate-pulse align-middle ml-2" /> : (identity?.name?.split(' ')[0] || 'Trainee')}</span>
           </h1>
           <div className="flex items-center gap-3">
-             <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
-                <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Profile: In Compliance</span>
+             <div className={`flex items-center gap-1.5 px-2.5 py-1 ${safetyAlertCount > 0 ? 'bg-amber-500/10 border-amber-500/20' : 'bg-emerald-500/10 border-emerald-500/20'} border rounded-full`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${safetyAlertCount > 0 ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]'} animate-pulse`}></span>
+                <span className={`text-[10px] font-black ${safetyAlertCount > 0 ? 'text-amber-400' : 'text-emerald-400'} uppercase tracking-widest`}>
+                   Profile: {safetyAlertCount > 0 ? 'Attention Required' : 'In Compliance'}
+                </span>
              </div>
              <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">{t('dashboard.subtitle')}</p>
           </div>
@@ -228,7 +230,7 @@ function TraineeDashboardContent() {
           icon={<AlertTriangle className="h-6 w-6 text-rose-500" />}
           themeColor="red"
           valueColor="text-rose-500"
-          href="/trainee/feedback"
+          href="#upcoming-events"
           sub="Response Required"
           subColor="text-rose-500/60"
           delay={450}
@@ -381,65 +383,90 @@ function TraineeDashboardContent() {
             )}
           </div>
         </div>
-
         <div className="space-y-6">
-          <div className="rounded-2xl border border-[#334155] bg-[#1e293b] p-5">
-            <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-white">📅 {t('events.title')}</h3>
-            <div className="space-y-3">
-              {feed.upcomingEvents.map((event) => {
-                const date = new Date(event.date);
-                return (
-                  <div key={event.id} className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 flex-shrink-0 flex-col items-center justify-center rounded-lg border border-[#334155] bg-[#020817]">
-                      <span className="text-lg font-bold leading-none text-white">{date.getDate()}</span>
-                      <span className="text-[10px] uppercase text-slate-400">{date.toLocaleString('en', { month: 'short' })}</span>
+          <div id="upcoming-events" className="rounded-2xl border border-[#334155] bg-[#1e293b] p-5 shadow-xl scroll-mt-20">
+            <h3 className="mb-4 flex items-center justify-between text-sm font-semibold text-white">
+              <span className="flex items-center gap-2">📅 {t('events.title')}</span>
+              {feed.upcomingEvents.length > 0 && <span className="text-[10px] bg-cyan-500/10 text-cyan-400 px-2 py-0.5 rounded-full border border-cyan-500/20">{feed.upcomingEvents.length}</span>}
+            </h3>
+            <div className={`space-y-4 overflow-y-auto pr-2 custom-scrollbar ${feed.upcomingEvents.length > 5 ? 'max-h-[400px]' : ''}`}>
+              {feed.upcomingEvents.length > 0 ? (
+                feed.upcomingEvents.map((event) => {
+                  const date = new Date(event.date);
+                  return (
+                    <div key={event.id} className="flex items-center gap-3 p-3 rounded-xl bg-[#020817]/40 border border-white/5 hover:border-cyan-500/30 transition-all group">
+                      <div className="flex h-11 w-11 flex-shrink-0 flex-col items-center justify-center rounded-lg border border-[#334155] bg-[#020817] group-hover:border-cyan-500/30 transition-colors">
+                        <span className="text-lg font-bold leading-none text-white">{date.getDate()}</span>
+                        <span className="text-[9px] uppercase text-slate-500 font-black">{date.toLocaleString('en', { month: 'short' })}</span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-bold text-slate-200 group-hover:text-white transition-colors truncate">{event.title}</div>
+                        <div className="text-[10px] text-slate-500 font-medium">{event.time}</div>
+                      </div>
+                      <span className={`rounded-xl px-2.5 py-1 text-[9px] font-black tracking-widest border ${
+                        event.type === 'DRILL' || event.mandatory 
+                          ? 'bg-rose-500/10 text-rose-400 border-rose-500/20 shadow-[0_0_10px_rgba(244,63,94,0.1)]' 
+                          : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                      }`}>
+                        {event.mandatory ? 'URGENT' : event.type}
+                      </span>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium text-white">{event.title}</div>
-                      <div className="text-xs text-slate-500">{event.time}</div>
-                    </div>
-                    <span className={`rounded-full px-2 py-0.5 text-[10px] ${event.type === 'DRILL' ? 'bg-red-500/15 text-red-400' : 'bg-blue-500/15 text-blue-400'}`}>
-                      {event.type}
-                    </span>
+                  );
+                })
+              ) : (
+                <div className="py-12 flex flex-col items-center justify-center text-center">
+                  <div className="h-12 w-12 rounded-full bg-slate-800/50 flex items-center justify-center mb-3">
+                    <Shield className="h-6 w-6 text-slate-600" />
                   </div>
-                );
-              })}
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">System Clear</p>
+                  <p className="text-[10px] text-slate-600 mt-1">No active alerts or events found</p>
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="rounded-2xl border border-[#334155] bg-[#1e293b] p-5">
-            <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-white">🏆 {t('achievements.title')}</h3>
-            <div className="space-y-2.5">
-              {feed.achievements.map((achievement) => (
-                <div key={achievement.id} className="group relative flex items-center gap-3">
-                  <div className={`h-8 w-8 flex-shrink-0 rounded-full flex items-center justify-center text-base ${achievement.unlocked ? 'border border-amber-500/30 bg-amber-500/20' : 'border border-[#334155] bg-[#020817]'}`}>
-                    {achievement.icon}
-                  </div>
-                  <span className={`flex-1 text-sm ${achievement.unlocked ? 'font-medium text-white' : 'text-slate-500'}`}>
-                    {achievement.title}
-                  </span>
-                  {achievement.unlocked ? (
-                    <span className="text-sm text-emerald-400">✅</span>
-                  ) : (
-                    <div className="relative">
-                      <span className="text-slate-600">🔒</span>
-                      {achievement.hint && (
-                        <div className="absolute bottom-full right-0 z-50 mb-1 hidden whitespace-nowrap rounded-lg border border-[#334155] bg-[#020817] px-3 py-2 text-xs text-slate-400 group-hover:block">
-                          {achievement.hint}
-                        </div>
+          <div className="rounded-2xl border border-[#334155] bg-[#1e293b] p-5 shadow-xl">
+            <h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-white">🏆 {t('achievements.title')}</h3>
+            <div className={`space-y-3 overflow-y-auto pr-2 custom-scrollbar ${feed.achievements.length > 5 ? 'max-h-[350px]' : ''}`}>
+              {feed.achievements.length > 0 ? (
+                feed.achievements.map((achievement) => (
+                  <div key={achievement.id} className="group relative flex items-center gap-3 p-2 rounded-xl border border-transparent hover:bg-white/[0.02] transition-all">
+                    <div className={`h-9 w-9 flex-shrink-0 rounded-xl flex items-center justify-center text-lg shadow-inner ${achievement.unlocked ? 'border border-amber-500/30 bg-gradient-to-br from-amber-500/20 to-orange-500/10' : 'border border-[#334155] bg-[#020817]'}`}>
+                      <span className={achievement.unlocked ? 'drop-shadow-sm' : 'grayscale opacity-40'}>{achievement.icon}</span>
+                    </div>
+                    <div className="flex-1">
+                      <div className={`text-xs font-bold ${achievement.unlocked ? 'text-slate-200' : 'text-slate-500'}`}>
+                        {achievement.title}
+                      </div>
+                      {!achievement.unlocked && achievement.hint && (
+                         <div className="text-[9px] text-slate-600 italic mt-0.5">{achievement.hint}</div>
                       )}
                     </div>
-                  )}
-                </div>
-              ))}
+                    {achievement.unlocked ? (
+                      <div className="h-5 w-5 rounded-full bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30">
+                        <span className="text-[10px]">✅</span>
+                      </div>
+                    ) : (
+                      <span className="text-xs opacity-20">🔒</span>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <p className="text-xs text-slate-600 text-center py-4 italic">No achievements available yet</p>
+              )}
             </div>
-            <div className="mt-3">
-              <div className="mb-1 text-xs text-slate-400">{unlockedAchievementCount} / {feed.achievements.length || 0} {t('dashboard.achievements_unlocked')}</div>
-              <progress 
-                className="h-1 w-full overflow-hidden rounded-full bg-[#020817] [&::-webkit-progress-bar]:bg-[#020817] [&::-webkit-progress-value]:bg-amber-500 [&::-moz-progress-bar]:bg-amber-500"
-                value={unlockedAchievementCount} 
-                max={feed.achievements.length || 1}
-              />
+            <div className="mt-4 pt-4 border-t border-white/5">
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{unlockedAchievementCount} / {Math.max(4, feed.achievements.length)} Unlocked</div>
+                <div className="text-[10px] font-black text-amber-500">{Math.round((unlockedAchievementCount / Math.max(1, feed.achievements.length)) * 100)}%</div>
+              </div>
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#020817] border border-white/5 shadow-inner">
+                 <motion.div 
+                   initial={{ width: 0 }}
+                   animate={{ width: `${(unlockedAchievementCount / Math.max(1, feed.achievements.length)) * 100}%` }}
+                   className="h-full bg-gradient-to-r from-amber-600 to-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.4)]"
+                 />
+              </div>
             </div>
           </div>
         </div>
