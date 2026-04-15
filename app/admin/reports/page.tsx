@@ -178,7 +178,11 @@ export default function ReportsPage() {
     const uniqueUsers = new Set<string>();
 
     analyticsRows.forEach((row) => {
-      if (row.userName && row.userName !== 'Unknown User') uniqueUsers.add(row.userName);
+      if (row.userId && row.userId !== 'unknown') {
+        uniqueUsers.add(row.userId);
+      } else if (row.userName && row.userName !== 'Unknown User') {
+        uniqueUsers.add(row.userName);
+      }
       
       const isCompletion = row.action.includes('complete') && (row.action.includes('test') || row.action.includes('quiz') || row.action.includes('course'));
       if (isCompletion) {

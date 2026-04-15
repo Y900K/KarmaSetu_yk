@@ -19,6 +19,7 @@ type DashboardEvent = {
   date: string;
   time: string;
   type: string;
+  label?: string;
   mandatory?: boolean;
 };
 
@@ -413,7 +414,7 @@ function TraineeDashboardContent() {
                           ? 'bg-rose-500/10 text-rose-400 border-rose-500/20 shadow-[0_0_10px_rgba(244,63,94,0.1)]' 
                           : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
                       }`}>
-                        {event.mandatory ? 'URGENT' : event.type}
+                        {event.label ?? event.type}
                       </span>
                     </div>
                   );

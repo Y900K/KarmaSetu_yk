@@ -10,8 +10,27 @@ type TraineeAnnouncementEvent = {
   date: string;
   time: string;
   type: string;
+  priority: 'INFO' | 'REMINDER' | 'HIGH' | 'URGENT';
+  label: string;
   mandatory?: boolean;
 };
+
+function normalizeAnnouncementPriority(value: unknown): TraineeAnnouncementEvent['priority'] {
+  const allowed: TraineeAnnouncementEvent['priority'][] = ['INFO', 'REMINDER', 'HIGH', 'URGENT'];
+  return allowed.includes(value as TraineeAnnouncementEvent['priority'])
+    ? (value as TraineeAnnouncementEvent['priority'])
+    : 'INFO';
+}
+
+function formatAnnouncementLabel(priority: TraineeAnnouncementEvent['priority']): string {
+  if (priority === 'HIGH') {
+    return 'HIGH';
+  }
+  if (priority === 'URGENT') {
+    return 'URGENT';
+  }
+  return priority;
+}
 
 export async function GET(request: Request) {
   const trainee = await requireTrainee(request);
@@ -48,13 +67,18 @@ export async function GET(request: Request) {
     })
     .map((doc) => {
       const createdAt = doc.createdAt instanceof Date ? doc.createdAt : new Date();
+      const effectiveDate = doc.scheduledAt instanceof Date ? doc.scheduledAt : createdAt;
+      const priority = normalizeAnnouncementPriority(doc.priority);
+
       return {
         id: doc._id.toString(),
         title: typeof doc.title === 'string' ? doc.title : 'Platform Announcement',
-        date: createdAt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
-        time: createdAt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
-        type: typeof doc.priority === 'string' ? doc.priority : 'INFO',
-        mandatory: doc.priority === 'URGENT' || doc.priority === 'HIGH',
+        date: effectiveDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+        time: effectiveDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+        type: priority,
+        priority,
+        label: formatAnnouncementLabel(priority),
+        mandatory: priority === 'URGENT' || priority === 'HIGH',
       };
     });
 

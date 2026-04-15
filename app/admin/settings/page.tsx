@@ -45,27 +45,29 @@ type ToggleProps = {
 
 function Toggle({ label, checked, onChange, hint }: ToggleProps) {
   return (
-    <div className="flex items-center justify-between py-3 border-b border-[#1e293b] last:border-0">
-      <div>
+    <label className="flex w-full cursor-pointer items-center justify-between py-3 border-b border-[#1e293b] last:border-0 transition-colors hover:bg-white/5">
+      <div className="text-left">
         <div className="text-sm text-white">{label}</div>
         {hint && <div className="text-[10px] text-slate-500 mt-0.5">{hint}</div>}
       </div>
-      <button
-        onClick={() => onChange(!checked)}
-        title={label}
-        aria-label={label}
-        className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer ${checked ? 'bg-cyan-500' : 'bg-[#334155]'}`}
-      >
-        <div className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-md transition-transform ${checked ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
-      </button>
-    </div>
+      <div className={`relative w-11 h-6 rounded-full transition-colors ${checked ? 'bg-cyan-500' : 'bg-[#334155]'}`}>
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(event) => onChange(event.target.checked)}
+          className="absolute inset-0 h-full w-full opacity-0 cursor-pointer"
+          aria-label={label}
+        />
+        <span className={`absolute top-0.5 left-0 h-5 w-5 rounded-full bg-white shadow-md transition-transform ${checked ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
+      </div>
+    </label>
   );
 }
 
 const DEFAULT_SETTINGS = {
   companyName: 'KarmaSetu Industrial Training',
   companyLogo: '/logo.png',
-  defaultRole: 'Worker / Operator',
+  defaultRole: 'Apprenticeship',
   complianceThreshold: 80,
   certificateExpiry: 12,
   autoAssignNewCourses: true,
@@ -274,7 +276,7 @@ export default function SettingsPage() {
                   onChange={(e) => setSettings({ ...settings, defaultRole: e.target.value })}
                   className="w-full bg-[#0f172a] border border-[#334155] rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-cyan-500 cursor-pointer"
                 >
-                  {['Worker / Operator', 'Supervisor / Team Lead', 'Manager / Department Head', 'Safety Officer', 'HR / Admin'].map((r) => (
+                  {['Apprenticeship', 'Worker / Operator', 'Supervisor / Team Lead', 'Manager / Department Head', 'Safety Officer', 'HR / Admin'].map((r) => (
                     <option key={r} value={r}>{r}</option>
                   ))}
                 </select>
@@ -285,6 +287,7 @@ export default function SettingsPage() {
                 <h4 className="text-sm font-semibold text-white mb-3">Available Roles</h4>
                 <div className="space-y-2">
                   {[
+                    { role: 'Apprenticeship', desc: 'Entry-level trainee with guided learning and mentorship support', color: 'bg-sky-500/15 text-sky-400' },
                     { role: 'Worker / Operator', desc: 'Standard trainee with access to assigned courses and quizzes', color: 'bg-cyan-500/15 text-cyan-400' },
                     { role: 'Supervisor / Team Lead', desc: 'Can view team progress and compliance reports', color: 'bg-amber-500/15 text-amber-400' },
                     { role: 'Safety Officer', desc: 'Access to safety reports and compliance dashboards', color: 'bg-emerald-500/15 text-emerald-400' },
