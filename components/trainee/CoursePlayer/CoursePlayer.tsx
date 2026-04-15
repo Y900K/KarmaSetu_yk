@@ -389,10 +389,14 @@ export default function CoursePlayer({ courseId }: { courseId: string }) {
 
     void persistProgress({ progressPct: currentProgressPct, score: percentScore, quizAttempt });
 
+    const totalViewedBlocks = completedLessonsCount + viewedDocIds.length;
+    const totalBlockCount = course.lessons.length + course.documents.length;
+    const completedBlocksOnPass = Math.min(totalBlockCount, totalViewedBlocks);
+
     if (passed) {
-      void persistProgress({ progressPct: 100, completedBlocks: course.lessons.length, score: percentScore });
+      void persistProgress({ progressPct: 100, completedBlocks: completedBlocksOnPass, score: percentScore, quizAttempt });
     } else {
-      void persistProgress({ progressPct: currentProgressPct, completedBlocks: completedLessonsCount, score: percentScore });
+      void persistProgress({ progressPct: currentProgressPct, completedBlocks: completedLessonsCount, score: percentScore, quizAttempt });
     }
 
     setCurrentView('quiz-results');

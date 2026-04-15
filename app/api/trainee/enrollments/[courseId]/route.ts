@@ -258,7 +258,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ co
     }
 
     const progressJump = normalizedCompletedBlocks - existingCompletedBlocks;
-    if (progressJump > 1 && !body.quizAttempt) {
+    const isDocumentProgressUpdate = Array.isArray(body.viewedDocIds) && body.viewedDocIds.length > 0;
+    if (progressJump > 1 && !body.quizAttempt && !isDocumentProgressUpdate) {
       return NextResponse.json(
         {
           ok: false,
