@@ -17,6 +17,7 @@ type ProfileState = {
   avatar: string;
   phone: string;
   completedCount: number;
+  totalEnrollments: number;
   averageProgress: number;
   certCount: number;
   recentActivity: Array<{ text: string; time: string; color: string }>;
@@ -30,6 +31,7 @@ const defaultProfile: ProfileState = {
   avatar: 'TU',
   phone: '',
   completedCount: 0,
+  totalEnrollments: 0,
   averageProgress: 0,
   certCount: 0,
   recentActivity: [],
@@ -74,6 +76,10 @@ function ProfileContent() {
               typeof data.profile.completedCount === 'number'
                 ? data.profile.completedCount
                 : defaultProfile.completedCount,
+            totalEnrollments:
+              typeof data.profile.totalEnrollments === 'number'
+                ? data.profile.totalEnrollments
+                : defaultProfile.totalEnrollments,
             averageProgress:
               typeof data.profile.averageProgress === 'number'
                 ? data.profile.averageProgress
@@ -115,8 +121,11 @@ function ProfileContent() {
     }
   };
 
-  const completedCount = completedCoursesCount;
-  const avgProgress = averageProgress;
+  // Use profile API data for stats — it includes ALL enrollments (even for deleted courses)
+  const completedCount = isLoadingProfile ? completedCoursesCount : profile.completedCount;
+  const totalEnrolled = isLoadingProfile ? totalAssignedCourses : profile.totalEnrollments;
+  const avgProgress = isLoadingProfile ? averageProgress : profile.averageProgress;
+  const profileCertCount = isLoadingProfile ? certificateCount : profile.certCount;
 
   const saveProfile = async () => {
     try {
@@ -284,25 +293,25 @@ function ProfileContent() {
           <div className="grid grid-cols-2 gap-4">
             {[
               { 
-                value: isLoading ? '...' : `${completedCount}/${Math.max(totalAssignedCourses, 0)}`, 
+                value: (isLoading && isLoadingProfile) ? '...' : `${completedCount}/${Math.max(totalEnrolled, completedCount)}`, 
                 label: 'Courses Completed', 
                 icon: '✅', 
                 colorClass: 'text-emerald-400' 
               },
               { 
-                value: isLoading ? '...' : `${avgProgress}%`, 
+                value: (isLoading && isLoadingProfile) ? '...' : `${avgProgress}%`, 
                 label: 'Avg Progress', 
                 icon: '📊', 
                 colorClass: 'text-cyan-400' 
               },
               { 
-                value: isLoading ? '...' : `${certificateCount}`, 
+                value: (isLoading && isLoadingProfile) ? '...' : `${profileCertCount}`, 
                 label: 'Certificates', 
                 icon: '🏅', 
                 colorClass: 'text-amber-400' 
               },
               { 
-                value: isLoading ? '...' : `${Math.round(courses.reduce((sum, course) => sum + (course.completedBlocks || 0), 0) * 0.75)}h`, 
+                value: (isLoading && isLoadingProfile) ? '...' : `${Math.round(courses.reduce((sum, course) => sum + (course.completedBlocks || 0), 0) * 0.75)}h`, 
                 label: 'Study Hours', 
                 icon: '⏱', 
                 colorClass: 'text-violet-400' 
@@ -338,7 +347,7 @@ function ProfileContent() {
 
           {/* Recent Activity */}
           <div className="bg-[#1e293b] border border-[#334155] rounded-2xl p-6">
-            <h3 className="text-sm font-semibold text-white mb-4">Recent Activity (Last 24h)</h3>
+            <h3 className="text-sm font-semibold text-white mb-4">Recent Activity (Last 48h)</h3>
             <div className="space-y-0">
               {profile.recentActivity.length > 0 ? profile.recentActivity.map((a, i) => {
                 const borderColorMap: Record<string, string> = {

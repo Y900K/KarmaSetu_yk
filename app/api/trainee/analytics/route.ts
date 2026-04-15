@@ -19,11 +19,13 @@ export async function GET(request: Request) {
       .find({ userId })
       .toArray();
 
-    const courseIds = enrollments.map(e => new ObjectId(e.courseId));
-    const courses = await db
-      .collection(COLLECTIONS.courses)
-      .find({ _id: { $in: courseIds } })
-      .toArray();
+    const validCourseIds = enrollments
+      .map(e => typeof e.courseId === 'string' ? e.courseId : '')
+      .filter(id => /^[0-9a-fA-F]{24}$/.test(id));
+    const courseIds = validCourseIds.map(id => new ObjectId(id));
+    const courses = courseIds.length > 0
+      ? await db.collection(COLLECTIONS.courses).find({ _id: { $in: courseIds } }).toArray()
+      : [];
 
     const courseMap = new Map(courses.map(c => [c._id.toString(), c]));
 

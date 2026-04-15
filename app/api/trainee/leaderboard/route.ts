@@ -46,6 +46,8 @@ export async function GET(request: Request) {
 
     const { db, session } = trainee;
 
+    // Simplified aggregation — no $toObjectId needed.
+    // We include ALL enrollments (even for deleted courses) so points are preserved.
     const [users, enrollmentStats, certificates] = await Promise.all([
       db.collection(COLLECTIONS.users).find({ isActive: true, role: { $ne: 'admin' } }).toArray(),
       db
@@ -56,33 +58,6 @@ export async function GET(request: Request) {
           completedCount: number;
           totalCount: number;
         }>([
-          // Join against courses to exclude deleted ones
-          {
-            $addFields: {
-              courseIdStr: { $toString: '$courseId' }
-            }
-          },
-          {
-            $addFields: {
-              courseObjId: { 
-                $cond: { 
-                  if: { $regexMatch: { input: '$courseIdStr', regex: /^[0-9a-fA-F]{24}$/ } }, 
-                  then: { $toObjectId: '$courseIdStr' }, 
-                  else: null 
-                } 
-              }
-            }
-          },
-          {
-            $lookup: {
-              from: COLLECTIONS.courses,
-              localField: 'courseObjId',
-              foreignField: '_id',
-              as: 'courseData'
-            }
-          },
-          // We include all enrollments regardless of course deletion status
-          // so that trainees do not lose points when an old course is archived.
           {
             $group: {
               _id: '$userId',
@@ -106,14 +81,14 @@ export async function GET(request: Request) {
         .toArray(),
     ]);
 
-    const enrollmentMap = new Map();
+    const enrollmentMap = new Map<string, { avgProgress: number; completedCount: number; totalCount: number }>();
     enrollmentStats.forEach((entry) => {
       if (entry._id) {
         enrollmentMap.set(entry._id.toString(), entry);
       }
     });
 
-    const certMap = new Map();
+    const certMap = new Map<string, number>();
     certificates.forEach((entry) => {
       if (entry._id) {
         certMap.set(entry._id.toString(), entry.certCount);
@@ -149,10 +124,11 @@ export async function GET(request: Request) {
 
     scoredUsers.sort((a, b) => b.pts - a.pts);
 
+    const selfId = session.user?._id?.toString();
+
     const leaderboard: LeaderboardRow[] = scoredUsers.map((user, index) => {
       const rank = index + 1;
       const badge = badgeForRank(rank, user.pts);
-      const selfId = session.user?._id?.toString();
 
       return {
         rank,

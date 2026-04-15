@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireTrainee } from '@/lib/auth/requireTrainee';
-import { ACHIEVEMENTS, SAFETY_TIPS, UPCOMING_EVENTS } from '@/data/mockTraineeData';
+import { SAFETY_TIPS } from '@/data/mockTraineeData';
 import { COLLECTIONS } from '@/lib/db/collections';
 
 type TraineeAnnouncementEvent = {
@@ -19,11 +19,13 @@ export async function GET(request: Request) {
   }
 
   const { db, session } = trainee;
+  const userId = session.user._id.toString();
   const userDept = typeof session.user.department === 'string' && session.user.department.trim().length > 0
     ? session.user.department.trim()
     : 'General';
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
+  // Fetch admin announcements from database only (no mock events)
   const announcements = await db
     .collection(COLLECTIONS.adminAnnouncements)
     .find({ status: { $ne: 'archived' }, createdAt: { $gte: sevenDaysAgo } })
@@ -31,17 +33,16 @@ export async function GET(request: Request) {
     .limit(30)
     .toArray();
 
-  const mappedAnnouncementEvents: TraineeAnnouncementEvent[] = announcements
+  const upcomingEvents: TraineeAnnouncementEvent[] = announcements
     .filter((doc) => {
       const sentTo = Array.isArray(doc.sentTo)
         ? doc.sentTo.filter((value): value is string => typeof value === 'string').map((value) => value.trim())
         : ['All Departments'];
 
       return (
-        (sentTo.includes('All Departments') ||
+        sentTo.includes('All Departments') ||
         sentTo.includes('General') ||
-        sentTo.includes(userDept)) &&
-        !(typeof doc.title === 'string' && doc.title.includes('Compliance Warning'))
+        sentTo.includes(userDept)
       );
     })
     .map((doc) => {
@@ -56,14 +57,14 @@ export async function GET(request: Request) {
       };
     });
 
+  // Dynamic achievements based on real enrollments + certificates
   const [enrollments, certificates] = await Promise.all([
-    db.collection(COLLECTIONS.enrollments).find({ userId: session.user._id.toString() }).toArray(),
-    db.collection(COLLECTIONS.certificates).find({ userId: session.user._id.toString(), status: { $ne: 'revoked' } }).toArray()
+    db.collection(COLLECTIONS.enrollments).find({ userId }).toArray(),
+    db.collection(COLLECTIONS.certificates).find({ userId, status: { $ne: 'revoked' } }).toArray()
   ]);
 
   const completedCount = enrollments.filter(e => e.status === 'completed').length;
   
-  // Dynamic achievements calculation
   const dynamicAchievements = [
     { 
       id: 1, 
@@ -99,10 +100,10 @@ export async function GET(request: Request) {
     ok: true,
     feed: {
       safetyTips: SAFETY_TIPS,
-      upcomingEvents: mergedEvents,
+      upcomingEvents,
       achievements: dynamicAchievements,
       generatedAt: new Date().toISOString(),
-      version: '2026-04-14-feed-dynamic',
+      version: '2026-04-15-feed-fixed',
     },
   }, { headers: { 'Cache-Control': 'no-store' } });
 }

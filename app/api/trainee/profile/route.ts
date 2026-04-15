@@ -120,6 +120,7 @@ export async function GET(request: Request) {
             ? 'Your account is under review. You can access default courses right away.'
             : 'Your account is fully approved.',
         completedCount,
+        totalEnrollments: enrollments.length,
         averageProgress,
         certCount: certificates.length,
         recentActivity,

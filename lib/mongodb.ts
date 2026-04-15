@@ -71,6 +71,19 @@ async function waitForWithTimeout(promise: Promise<void>, timeoutMs: number): Pr
 async function ensureIndexes(client: MongoClient, dbName: string) {
   const db = client.db(dbName);
 
+  // Drop the old unique enrollment index if it exists (it conflicts with duplicate data)
+  try {
+    await db.collection(COLLECTIONS.enrollments).dropIndex('enrollments_user_course_unique');
+  } catch {
+    // Index may not exist — that's fine
+  }
+  // Drop the old partial unique cert index (unsupported on Atlas serverless)
+  try {
+    await db.collection(COLLECTIONS.certificates).dropIndex('cert_user_course_active_unique');
+  } catch {
+    // Index may not exist — that's fine
+  }
+
   await Promise.all([
     db.collection(COLLECTIONS.users).createIndexes([
       { key: { email: 1 }, name: 'users_email_lookup' },
@@ -92,7 +105,7 @@ async function ensureIndexes(client: MongoClient, dbName: string) {
       { key: { createdAt: 1 }, name: 'auth_audit_ttl_90d', expireAfterSeconds: 7776000 },
     ]),
     db.collection(COLLECTIONS.enrollments).createIndexes([
-      { key: { userId: 1, courseId: 1 }, name: 'enrollments_user_course_unique', unique: true },
+      { key: { userId: 1, courseId: 1 }, name: 'enrollments_user_course' },
       { key: { userId: 1, updatedAt: -1 }, name: 'enrollments_user_updated' },
       { key: { createdAt: -1 }, name: 'enrollments_created' },
       { key: { userId: 1, status: 1 }, name: 'enrollments_user_status' },
@@ -104,12 +117,7 @@ async function ensureIndexes(client: MongoClient, dbName: string) {
       { key: { isPublished: 1, isDeleted: 1, createdAt: -1 }, name: 'courses_publish_deleted_created' },
     ]),
     db.collection(COLLECTIONS.certificates).createIndexes([
-      {
-        key: { userId: 1, courseId: 1 },
-        name: 'cert_user_course_active_unique',
-        unique: true,
-        partialFilterExpression: { status: { $ne: 'revoked' } },
-      },
+      { key: { userId: 1, courseId: 1, status: 1 }, name: 'cert_user_course_status' },
       { key: { issuedAt: -1 }, name: 'cert_issued' },
       { key: { userId: 1, status: 1, issuedAt: -1 }, name: 'cert_user_status_issued' },
       { key: { certNo: 1 }, name: 'cert_cert_no', unique: true },
