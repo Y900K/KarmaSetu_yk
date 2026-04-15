@@ -19,7 +19,7 @@ type LeaderboardUser = {
 
 type LeaderboardTimeFilter = 'all' | 'month' | 'week';
 
-const podiumLabels = ['ðŸ¥‡', 'ðŸ¥ˆ', 'ðŸ¥‰'];
+const podiumLabels = ['🥇', '🥈', '🥉'];
 const podiumAvatarClasses = ['bg-amber-500', 'bg-slate-400', 'bg-orange-500'];
 const podiumTextClasses = ['text-amber-400', 'text-slate-300', 'text-orange-400'];
 const podiumBlockClasses = [

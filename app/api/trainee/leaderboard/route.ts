@@ -192,7 +192,8 @@ export async function GET(request: Request) {
       .map((user) => {
         const id = user._id.toString();
         const enrollment = enrollmentMap.get(id);
-        const avgProgress = Math.round(enrollment?.avgProgress || 0);
+        const avgProgressRaw = enrollment?.avgProgress ?? 0;
+        const avgProgress = Math.round(avgProgressRaw);
         const completedCount = enrollment?.completedCount || 0;
         const totalCount = enrollment?.totalCount || 0;
         const certStats = certMap.get(id);
@@ -214,6 +215,7 @@ export async function GET(request: Request) {
           name: typeof user.fullName === 'string' ? user.fullName : 'Trainee User',
           dept: typeof user.department === 'string' ? user.department : 'General',
           pts: points,
+          avgProgress: avgProgressRaw,
           completedCount,
           totalCount,
           certCount,
@@ -222,12 +224,29 @@ export async function GET(request: Request) {
       })
       .filter((user) => (since ? user.pts > 0 || Boolean(user.lastActivityAt) : true));
 
-    scoredUsers.sort((a, b) => b.pts - a.pts);
+    scoredUsers.sort((a, b) => {
+      if (b.pts !== a.pts) return b.pts - a.pts;
+      if (b.certCount !== a.certCount) return b.certCount - a.certCount;
+      if (b.completedCount !== a.completedCount) return b.completedCount - a.completedCount;
+      if (b.avgProgress !== a.avgProgress) return b.avgProgress - a.avgProgress;
+      if (b.lastActivityAt && a.lastActivityAt) {
+        return new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime();
+      }
+      if (b.lastActivityAt) return 1;
+      if (a.lastActivityAt) return -1;
+      return a.name.localeCompare(b.name, 'en', { sensitivity: 'base' });
+    });
 
     const selfId = session.user?._id?.toString();
 
+    let lastRank = 0;
+    let lastKey: string | null = null;
+
     const leaderboard: LeaderboardRow[] = scoredUsers.map((user, index) => {
-      const rank = index + 1;
+      const comparisonKey = `${user.pts}|${user.certCount}|${user.completedCount}|${user.avgProgress}`;
+      const rank = index === 0 || comparisonKey !== lastKey ? index + 1 : lastRank;
+      lastRank = rank;
+      lastKey = comparisonKey;
       const badge = badgeForRank(rank, user.pts);
 
       return {
@@ -236,7 +255,7 @@ export async function GET(request: Request) {
         avatar: initials(user.name),
         dept: user.dept,
         pts: user.pts,
-        courses: `${user.completedCount}/${Math.max(user.totalCount, 1)}`,
+        courses: `${user.completedCount}/${user.totalCount}`,
         certs: user.certCount,
         badge: badge.badge,
         badgeColor: badge.badgeColor,
