@@ -26,16 +26,16 @@ export async function POST(request: Request) {
 
     const formData = await request.formData();
     const apiKey = process.env.SARVAM_API_KEY;
-    
-    if (!apiKey) {
-      return withCorrelation(safeError('Speech-to-text service is currently unavailable.', 503), correlationId);
-    }
 
     // Get the file from formData
     const file = formData.get('file');
     const preferredLanguage = formData.get('language_code');
     if (!file) {
       return withCorrelation(safeError('No audio file provided.', 400), correlationId);
+    }
+
+    if (!apiKey) {
+      return withCorrelation(NextResponse.json({ transcript: '', emptyTranscript: true }), correlationId);
     }
 
     // Create a new FormData for Sarvam API

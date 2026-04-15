@@ -229,16 +229,43 @@ export async function POST(request: Request) {
     const { messages, isQuizActive } = await request.json();
     const apiKey = process.env.SARVAM_API_KEY;
 
-    if (!apiKey) {
-      return withCorrelation(NextResponse.json(
-        { error: 'Chat service is currently unavailable.' },
-        { status: 503 }
-      ), correlationId);
-    }
-
     // Extract language mode and voice intent from system message addendum
     let isVoiceInitiated = false;
     let filteredMessages = messages || [];
+
+    if (!apiKey) {
+      console.warn('[Sarvam Chat Proxy] SARVAM_API_KEY missing. Falling back to OpenRouter/static provider.');
+      filteredMessages = normalizeConversation(filteredMessages);
+      latestUserMessage = [...filteredMessages]
+        .reverse()
+        .find((m: { role?: string; content?: string }) => m?.role === 'user')?.content ?? '';
+
+      const gatewayResult = await callAI({
+        task: 'buddy_chat',
+        messages: filteredMessages,
+        temperature: 0.6,
+        max_tokens: 500,
+      });
+
+      if (gatewayResult.provider !== 'static_fallback') {
+        const cleaned = cleanResponse(stripReasoningBlocks(gatewayResult.content));
+        return withCorrelation(NextResponse.json({
+          choices: [{ message: { content: enforceWordCap(cleaned, needsDetailedResponse(latestUserMessage) ? 200 : 100) } }],
+        }), correlationId);
+      }
+
+      return withCorrelation(NextResponse.json({
+        choices: [
+          {
+            message: {
+              content: cleanResponse(
+                buildBuddyFallbackResponse(latestUserMessage, hasDevanagari(latestUserMessage) ? 'hinglish' : 'english')
+              ),
+            },
+          },
+        ],
+      }), correlationId);
+    }
 
     if (filteredMessages.length > 0 && filteredMessages[0].role === 'system') {
       const sysMsg = filteredMessages[0].content || '';
