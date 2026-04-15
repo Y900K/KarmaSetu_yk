@@ -4,6 +4,10 @@ import 'dotenv/config';
 const uri = process.env.MONGODB_URI;
 
 async function run() {
+  if (!uri) {
+    throw new Error('Missing required environment variable: MONGODB_URI');
+  }
+
   const client = new MongoClient(uri);
   try {
     await client.connect();
