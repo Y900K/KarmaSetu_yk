@@ -192,7 +192,7 @@ export async function GET(
         questions: quizQuestions,
       },
       lastActiveModuleId: enrollment?.lastActiveModuleId,
-      lastActiveView: enrollment?.lastActiveView as string | undefined,
+      lastActiveView: enrollment?.lastActiveView as 'video' | 'pdf' | 'quiz' | 'quiz-results' | undefined,
       videoCurrentTime: enrollment?.videoCurrentTime,
     };
 

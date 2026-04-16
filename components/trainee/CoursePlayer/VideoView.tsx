@@ -7,7 +7,7 @@ import { Lesson } from '@/data/coursePlayerDummyData';
 declare global {
   interface Window {
     onYouTubeIframeAPIReady?: () => void;
-    YT: unknown;
+    YT: any;
   }
 }
 
@@ -50,7 +50,7 @@ export default function VideoView({
   onUpdatePartialProgress,
 }: VideoViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const playerRef = useRef<unknown>(null);
+  const playerRef = useRef<any>(null);
   const [isNativePlayerVisible, setIsNativePlayerVisible] = useState(true);
   const embedUrl = parseMediaURL(lesson.youtubeURL);
 

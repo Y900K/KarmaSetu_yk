@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { COLLECTIONS } from '@/lib/db/collections';
 import { dedupeEnrollmentsByCourse, getEnrollmentStudyTimeMs } from '@/lib/enrollmentMetrics';
 import { requireTrainee } from '@/lib/auth/requireTrainee';
+import { normalizeCourseModules, toDateOnly } from '@/lib/courseUtils';
 
 type CourseStatus = 'Not Started' | 'In Progress' | 'Completed';
 type DbEnrollment = Record<string, unknown> & {
