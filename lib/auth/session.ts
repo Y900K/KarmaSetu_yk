@@ -136,6 +136,7 @@ export async function resolveSessionUser(db: Db, request: Request) {
     return null;
   }
 
+  // Force strict role and active status validation.
   if (user.isActive === false) {
     await sessionsCollection.deleteMany({ userId });
     return null;

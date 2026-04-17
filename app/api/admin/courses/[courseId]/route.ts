@@ -273,8 +273,13 @@ export async function PUT(request: Request, { params }: { params: Promise<{ cour
     );
 
     if (body.status !== 'Inactive' && body.isDefaultForNewTrainees === true) {
+      const traineeFilter: Record<string, any> = { role: 'trainee' };
+      if (Array.isArray(body.departments) && body.departments.length > 0) {
+        traineeFilter.department = { $in: body.departments };
+      }
+
       const trainees = await db.collection(COLLECTIONS.users)
-          .find({ role: 'trainee' })
+          .find(traineeFilter)
           .project({ _id: 1, department: 1 })
           .toArray();
 

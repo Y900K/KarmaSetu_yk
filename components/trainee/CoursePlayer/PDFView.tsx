@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getEmbeddableUrl } from '@/utils/resourceParser';
+import { getEmbeddableDriveUrl } from '@/lib/utils/mediaParser';
 import { Document } from '@/data/coursePlayerDummyData';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -25,7 +25,7 @@ export default function PDFView({
   language,
 }: PDFViewProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const embedUrl = getEmbeddableUrl(document.driveURL);
+  const embedUrl = getEmbeddableDriveUrl(document.driveURL);
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {

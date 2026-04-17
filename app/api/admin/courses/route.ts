@@ -311,9 +311,14 @@ export async function POST(request: Request) {
     );
 
     if (body.status !== 'Inactive' && body.isDefaultForNewTrainees) {
+      const traineeFilter: Record<string, any> = { role: 'trainee' };
+      if (Array.isArray(body.departments) && body.departments.length > 0) {
+        traineeFilter.department = { $in: body.departments };
+      }
+
       const trainees = await db
         .collection(COLLECTIONS.users)
-        .find({ role: 'trainee' })
+        .find(traineeFilter)
         .project({ _id: 1, department: 1 })
         .toArray();
 
