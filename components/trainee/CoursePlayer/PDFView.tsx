@@ -25,6 +25,7 @@ export default function PDFView({
   language,
 }: PDFViewProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isIframeLoaded, setIsIframeLoaded] = useState(false);
   const embedUrl = getEmbeddableDriveUrl(document.driveURL);
 
   useEffect(() => {
@@ -35,7 +36,10 @@ export default function PDFView({
     return () => window.removeEventListener('keydown', handleEsc);
   }, []);
 
-
+  // Reset loading state when document changes
+  useEffect(() => {
+    setIsIframeLoaded(false);
+  }, [document.id]);
 
   const renderViewerContent = (className = '') => (
     <div className={`flex flex-col bg-[#1e2d3d] overflow-hidden ${className}`}>
@@ -51,7 +55,6 @@ export default function PDFView({
           </div>
         </div>
         <div className="flex items-center gap-3 sm:gap-4">
-
           {!isFullscreen && (
             <button
               onClick={() => setIsFullscreen(true)}
@@ -65,29 +68,36 @@ export default function PDFView({
             href={document.driveURL}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[#0d1b2a] bg-cyan-500 hover:bg-cyan-400 w-10 h-10 sm:w-auto sm:px-5 rounded-xl text-xs transition-all flex items-center justify-center gap-2 font-black uppercase tracking-[0.1em] shadow-[0_5px_15px_-3px_rgba(6,182,212,0.4)] active:scale-95"
+            className="text-[#0d1b2a] bg-cyan-500 hover:bg-cyan-400 w-10 h-10 sm:w-auto sm:px-5 rounded-xl text-xs transition-all flex items-center justify-center gap-2 font-black uppercase tracking-[0.1em] shadow-[0_5px_15px_-3px_rgba(6,182,212,0.4)] active:scale-95 group/link"
           >
-            <span className="hidden sm:inline">Link</span>
-            <span className="text-lg leading-none mt-[-2px]">↗</span>
+            <span className="hidden sm:inline">Open Link</span>
+            <span className="text-lg leading-none mt-[-2px] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform">↗</span>
           </a>
         </div>
       </div>
 
       <div className="flex-1 bg-black/20 w-full h-full relative flex flex-col">
         {embedUrl ? (
-          <div className="w-full h-full relative bg-slate-900">
+          <div className="w-full h-full relative bg-slate-900 flex flex-col">
             <iframe 
               src={embedUrl} 
-              className="w-full h-full border-none"
+              onLoad={() => setIsIframeLoaded(true)}
+              className={`w-full h-full border-none transition-opacity duration-500 ${isIframeLoaded ? 'opacity-100' : 'opacity-0'}`}
               title={document.title}
               allow="autoplay; fullscreen"
               allowFullScreen
             />
-            {/* Fallback overlay (only visible if iframe doesn't cover it, or for styled loading) */}
-            <div className="absolute inset-0 -z-10 flex flex-col items-center justify-center p-8 text-center">
-              <div className="w-16 h-16 border-4 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin mb-4" />
-              <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">Synthesizing Document Stream...</p>
-            </div>
+            
+            {/* Loading / Fallback Overlay */}
+            {!isIframeLoaded && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center bg-slate-900">
+                <div className="w-16 h-16 border-4 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin mb-4" />
+                <p className="text-slate-200 text-sm font-black uppercase tracking-widest">Synthesizing Document Stream...</p>
+                <p className="text-slate-500 text-[10px] mt-2 max-w-[200px] font-bold uppercase leading-relaxed">
+                  Mobile browsers may restrict previews. If it doesn&apos;t load, use the blue button above.
+                </p>
+              </div>
+            )}
           </div>
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-4 px-6 text-center">
@@ -105,6 +115,7 @@ export default function PDFView({
       </div>
     </div>
   );
+
 
   return (
     <>

@@ -1,5 +1,6 @@
 /**
  * Standardizes YouTube/Drive links into embeddable formats.
+ * For mobile compatibility, it wraps PDFs and Drive files in Google Docs Viewer.
  */
 export function getEmbeddableURL(url: string | null | undefined): string {
   if (!url || typeof url !== 'string') return '';
@@ -10,7 +11,16 @@ export function getEmbeddableURL(url: string | null | undefined): string {
   const driveRegex = /drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/;
   const driveMatch = trimmed.match(driveRegex);
   if (driveMatch && driveMatch[1]) {
-    return `https://drive.google.com/file/d/${driveMatch[1]}/preview`;
+    const fileId = driveMatch[1];
+    // Use Google Docs Viewer for Drive files on mobile for maximum compatibility
+    // The 'uc' endpoint provides the raw file content which the viewer can then render
+    const directLink = `https://drive.google.com/uc?id=${fileId}&export=download`;
+    return `https://docs.google.com/viewer?url=${encodeURIComponent(directLink)}&embedded=true`;
+  }
+
+  // 1b. Check if it's a direct PDF link
+  if (trimmed.toLowerCase().endsWith('.pdf') || trimmed.includes('/pdf/')) {
+    return `https://docs.google.com/viewer?url=${encodeURIComponent(trimmed)}&embedded=true`;
   }
 
   // 2. YouTube Handling
@@ -82,6 +92,12 @@ export const getEmbeddableDriveUrl = (url: string | null | undefined): string =>
     return `https://www.figma.com/embed?embed_host=share&url=${encodeURIComponent(trimmed)}`;
   }
 
+  // Dropdown / generic file view fallback for known hosts if needed
+  if (trimmed.toLowerCase().endsWith('.pdf') || trimmed.includes('/pdf/')) {
+    return `https://docs.google.com/viewer?url=${encodeURIComponent(trimmed)}&embedded=true`;
+  }
+
   return getEmbeddableURL(trimmed);
 };
+
 
