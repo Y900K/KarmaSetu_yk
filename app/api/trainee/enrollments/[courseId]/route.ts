@@ -1,11 +1,10 @@
-import { createHash, randomUUID } from 'crypto';
+import { createHash } from 'crypto';
 import { NextResponse } from 'next/server';
 import { ObjectId } from 'mongodb';
 import { getMongoDb } from '@/lib/mongodb';
 import { COLLECTIONS } from '@/lib/db/collections';
 import { requireTrainee } from '@/lib/auth/requireTrainee';
 import { normalizeCourseModules } from '@/lib/courseUtils';
-import { collapseEnrollmentRecords } from '@/lib/enrollmentMetrics';
 
 const MAX_STUDY_TIME_INCREMENT_MS = 60 * 60 * 1000;
 
@@ -40,15 +39,6 @@ function resolveCourseBlockCount(course: Record<string, unknown>) {
   return 1;
 }
 
-type CourseLookupResult = {
-  id: string;
-  title: string;
-  blocks: number;
-  passingScore: number;
-  quizQuestionCount: number;
-  code?: string;
-  slug?: string;
-};
 
 async function findCourse(db: Awaited<ReturnType<typeof getMongoDb>>, courseId: string) {
   // Try to find in MongoDB first (by _id or by code/slug)
@@ -245,10 +235,6 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ co
     };
     const existingEnrollmentRecords = await db.collection(COLLECTIONS.enrollments).find(enrollmentFilter).toArray();
     
-    // Collapse to one logical enrollment
-    const existingEnrollment = existingEnrollmentRecords.length > 0
-      ? collapseEnrollmentRecords(existingEnrollmentRecords)
-      : null;
 
     const body = (await request.json().catch(() => ({}))) as ProgressBody;
     

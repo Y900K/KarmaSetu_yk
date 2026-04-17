@@ -7,8 +7,23 @@ import { Lesson } from '@/data/coursePlayerDummyData';
 declare global {
   interface Window {
     onYouTubeIframeAPIReady?: () => void;
-    YT: any;
+    YT: {
+      Player: new (
+        elementId: string,
+        options: {
+          videoId: string;
+          playerVars?: Record<string, number>;
+          events?: Record<string, (event: { data: number }) => void>;
+        }
+      ) => YTPlayer;
+    };
   }
+}
+
+interface YTPlayer {
+  getCurrentTime: () => number;
+  getDuration: () => number;
+  destroy: () => void;
 }
 
 type FullscreenDocumentLike = Document & {
@@ -50,7 +65,7 @@ export default function VideoView({
   onUpdatePartialProgress,
 }: VideoViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const playerRef = useRef<any>(null);
+  const playerRef = useRef<YTPlayer | null>(null);
   const [isNativePlayerVisible, setIsNativePlayerVisible] = useState(true);
   const embedUrl = parseMediaURL(lesson.youtubeURL);
 
@@ -100,7 +115,7 @@ export default function VideoView({
           start: Math.floor(videoCurrentTime) || 0,
         },
         events: {
-          onStateChange: (event: any) => {
+          onStateChange: (event: { data: number }) => {
             // YT.PlayerState.PLAYING is 1
             if (event.data === 1) {
               interval = setInterval(pollProgress, 5000); // Poll every 5 seconds
