@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { mutate } from 'swr';
-import { Course, COURSE_REGISTRY } from '@/data/coursePlayerDummyData';
+import { Course } from '@/data/coursePlayerDummyData';
 import { useLanguage } from '@/context/LanguageContext';
 import PlayerTopBar from './PlayerTopBar';
 import CourseSidebar from './CourseSidebar';
@@ -110,22 +110,15 @@ function CourseSkeleton() {
 export default function CoursePlayer({ courseId }: { courseId: string }) {
   const router = useRouter();
   const { language } = useLanguage();
-  const registryCourse = COURSE_REGISTRY[courseId] || null;
 
-  const [course, setCourse] = useState<Course | null>(registryCourse);
-  const [isLoadingCourse, setIsLoadingCourse] = useState(!registryCourse);
+  const [course, setCourse] = useState<Course | null>(null);
+  const [isLoadingCourse, setIsLoadingCourse] = useState(true);
   const [courseLoadError, setCourseLoadError] = useState<string | null>(null);
-  const [currentView, setCurrentView] = useState<'video' | 'pdf' | 'quiz' | 'quiz-results'>(() => getInitialView(registryCourse));
-  const [activeLessonId, setActiveLessonId] = useState<string | null>(() => getInitialLessonId(registryCourse));
-  const [activeDocId, setActiveDocId] = useState<string | null>(() => getInitialDocId(registryCourse));
+  const [currentView, setCurrentView] = useState<'video' | 'pdf' | 'quiz' | 'quiz-results'>('video');
+  const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
+  const [activeDocId, setActiveDocId] = useState<string | null>(null);
   const [viewedDocIds, setViewedDocIds] = useState<string[]>([]);
-  const [sidebarTab, setSidebarTab] = useState<'videos' | 'docs' | 'quiz'>(() =>
-    registryCourse?.lessons.length
-      ? 'videos'
-      : registryCourse?.documents.length
-      ? 'docs'
-      : 'quiz'
-  );
+  const [sidebarTab, setSidebarTab] = useState<'videos' | 'docs' | 'quiz'>('videos');
   const [sidebarOpenDesktop, setSidebarOpenDesktop] = useState(true);
   const [sidebarOpenMobile, setSidebarOpenMobile] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -140,26 +133,16 @@ export default function CoursePlayer({ courseId }: { courseId: string }) {
   useEffect(() => {
     let ignore = false;
 
-    setCourse(registryCourse);
-    setIsLoadingCourse(!registryCourse);
-    setCurrentView(getInitialView(registryCourse));
-    setActiveDocId(getInitialDocId(registryCourse));
+    setCourse(null);
+    setIsLoadingCourse(true);
+    setCurrentView('video');
+    setActiveDocId(null);
     setViewedDocIds([]);
-    setSidebarTab(
-      registryCourse?.lessons.length
-        ? 'videos'
-        : registryCourse?.documents.length
-        ? 'docs'
-        : 'quiz'
-    );
-    setActiveLessonId(getInitialLessonId(registryCourse));
+    setSidebarTab('videos');
+    setActiveLessonId(null);
     setIsFirstAttempt(false);
     setUserAnswers({});
     studySyncAtRef.current = Date.now();
-
-    if (registryCourse) {
-      return;
-    }
 
     async function loadCourse() {
       try {
@@ -232,7 +215,7 @@ export default function CoursePlayer({ courseId }: { courseId: string }) {
     return () => {
       ignore = true;
     };
-  }, [courseId, registryCourse, hasCheckedInitialProgress]);
+  }, [courseId, hasCheckedInitialProgress]);
 
   useEffect(() => {
     let redirectTimer: ReturnType<typeof setTimeout> | undefined;
