@@ -9,7 +9,7 @@ import {
 } from '@/lib/auth/security';
 
 const SESSION_COOKIE = 'ks_session';
-const DEFAULT_SESSION_TTL_DAYS = 1;
+const DEFAULT_SESSION_TTL_DAYS = 7;
 
 function buildSessionExpiryDate(): { expiresAt: Date; maxAgeSeconds: number } {
   const ttlDays = DEFAULT_SESSION_TTL_DAYS;
@@ -24,8 +24,9 @@ export async function createSession(db: Db, userId: string, userAgent?: string) 
   const tokenFingerprint = buildTokenFingerprint(token);
   const { expiresAt, maxAgeSeconds } = buildSessionExpiryDate();
 
-  // Session rotation policy: retain only the newest active session per user.
-  await db.collection(COLLECTIONS.sessions).deleteMany({ userId });
+  // Session policy: We allow multiple concurrent sessions (multi-device).
+  // This allows users to stay logged in on their phone and PC simultaneously.
+  // Security Note: Individual sessions can still be revoked by deleting them from the sessions collection.
 
   await db.collection(COLLECTIONS.sessions).insertOne({
     userId,
@@ -51,7 +52,7 @@ export function applySessionCookie(
     name: SESSION_COOKIE,
     value: token,
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production' && process.env.VERCEL === '1',
+    secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
     maxAge: resolvedMaxAge,
@@ -65,7 +66,7 @@ export function clearSessionCookie(response: NextResponse) {
     name: SESSION_COOKIE,
     value: '',
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production' && process.env.VERCEL === '1',
+    secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
     maxAge: 0,
@@ -103,22 +104,11 @@ export async function resolveSessionUser(db: Db, request: Request) {
   const tokenFingerprint = buildTokenFingerprint(token);
   const sessionsCollection = db.collection(COLLECTIONS.sessions);
 
-  const directSession = await sessionsCollection.findOne({
+  // Optimized lookup: use the indexed tokenFingerprint for direct O(1) matching.
+  const activeSession = await sessionsCollection.findOne({
     tokenFingerprint,
     expiresAt: { $gt: new Date() },
   });
-
-  let activeSession = directSession;
-
-  if (!activeSession) {
-    const legacySessions = await sessionsCollection
-      .find({ expiresAt: { $gt: new Date() } })
-      .toArray();
-
-    activeSession = legacySessions.find((session) =>
-      typeof session.tokenHash === 'string' && verifySecret(token, session.tokenHash)
-    ) ?? null;
-  }
 
   if (!activeSession || typeof activeSession.userId !== 'string') {
     return null;

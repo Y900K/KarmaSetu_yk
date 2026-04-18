@@ -88,6 +88,12 @@ function LoginContent() {
         return;
       }
 
+      const callbackUrl = searchParams.get('redirectTo') || searchParams.get('callbackUrl');
+      if (callbackUrl && (callbackUrl.startsWith('/') || callbackUrl.startsWith(window.location.origin))) {
+        router.push(callbackUrl);
+        return;
+      }
+
       const resolvedRole = data?.user?.role === 'admin' ? 'admin' : 'trainee';
       router.push(resolvedRole === 'admin' ? '/admin/dashboard' : '/trainee/dashboard');
     } catch (err) {

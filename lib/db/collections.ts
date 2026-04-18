@@ -164,6 +164,7 @@ export interface SessionDoc {
   _id?: string;
   userId: string;
   tokenHash: string;
+  tokenFingerprint: string;
   expiresAt: Date;
   createdAt: Date;
   userAgent?: string;

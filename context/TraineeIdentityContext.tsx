@@ -63,29 +63,31 @@ export function TraineeIdentityProvider({ children }: { children: React.ReactNod
 
     try {
       setLoading(true);
-      const response = await fetch('/api/trainee/profile');
+      const response = await fetch('/api/auth/me');
       const data = await response.json().catch(() => ({}));
 
-      if (response.ok && data.ok && data.profile) {
-        const name = typeof data.profile.name === 'string' && data.profile.name.trim()
-          ? data.profile.name.trim()
-          : DEFAULT_IDENTITY.name;
+      if (response.ok && data.ok && data.user) {
+        const name = typeof data.user.fullName === 'string' && data.user.fullName.trim()
+          ? data.user.fullName.trim()
+          : typeof data.user.name === 'string' && data.user.name.trim()
+            ? data.user.name.trim()
+            : DEFAULT_IDENTITY.name;
 
         setIdentity({
           name,
           initials: toInitials(name) || DEFAULT_IDENTITY.initials,
           role:
-            typeof data.profile.role === 'string' && data.profile.role.trim()
-              ? data.profile.role
+            typeof data.user.role === 'string' && data.user.role.trim()
+              ? data.user.role
               : DEFAULT_IDENTITY.role,
           approvalStatus:
-            data.profile.approvalStatus === 'pending' || data.profile.approvalStatus === 'rejected'
-              ? data.profile.approvalStatus
+            data.user.approvalStatus === 'pending' || data.user.approvalStatus === 'rejected'
+              ? data.user.approvalStatus
               : 'approved',
-          accessLevel: data.profile.accessLevel === 'basic' ? 'basic' : 'full',
+          accessLevel: data.user.accessLevel === 'basic' ? 'basic' : 'full',
           authMessage:
-            typeof data.profile.authMessage === 'string' && data.profile.authMessage.trim()
-              ? data.profile.authMessage
+            typeof data.user.authMessage === 'string' && data.user.authMessage.trim()
+              ? data.user.authMessage
               : DEFAULT_IDENTITY.authMessage,
         });
 
