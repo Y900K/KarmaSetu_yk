@@ -256,19 +256,19 @@ export function toDateOnly(value: unknown): string | null {
 }
 
 export function validateQuizQuestions(
-  questions?: Array<{ text: string; options: string[]; correct: number }>
+  questions?: Array<{ text: string; options: string[]; correct: number; explanation?: string }>
 ) {
   if (!questions || !Array.isArray(questions)) {
     return {
       valid: true,
-      questions: [] as Array<{ text: string; options: string[]; correct: number }>,
+      questions: [] as Array<CourseQuizQuestion>,
     };
   }
 
   if (questions.length === 0) {
     return {
       valid: true,
-      questions: [] as Array<{ text: string; options: string[]; correct: number }>,
+      questions: [] as Array<CourseQuizQuestion>,
     };
   }
 

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getMongoDb } from '@/lib/mongodb';
 import { COLLECTIONS } from '@/lib/db/collections';
 import { resolveSessionUser } from '@/lib/auth/session';
+import { normalizeDepartment } from '@/lib/utils/normalization';
 
 type DistributionEntry = { hasOverdue: boolean; hasInProgress: boolean };
 type AggregatedByCourse = { _id: string; total: number; completed: number; avgProgress: number };
@@ -24,6 +25,18 @@ export async function GET(request: Request) {
       return NextResponse.json({ ok: false, message: 'Admin access denied.' }, { status: 403 });
     }
 
+    const { searchParams } = new URL(request.url);
+    const timeframe = searchParams.get('timeframe') || 'all';
+    const now = new Date();
+    const nowMs = now.getTime();
+
+    let enrollmentTimeFilter: Record<string, any> = {};
+    if (timeframe === '7d') {
+      enrollmentTimeFilter = { updatedAt: { $gte: new Date(nowMs - 7 * 24 * 60 * 60 * 1000) } };
+    } else if (timeframe === '30d') {
+      enrollmentTimeFilter = { updatedAt: { $gte: new Date(nowMs - 30 * 24 * 60 * 60 * 1000) } };
+    }
+
     // Aggregate Stats using narrow projections
     const [
       totalTrainees,
@@ -40,20 +53,36 @@ export async function GET(request: Request) {
       db.collection(COLLECTIONS.certificates).countDocuments({ status: { $ne: 'revoked' } }),
       db.collection(COLLECTIONS.courses).countDocuments({ isDeleted: { $ne: true } }),
       db.collection(COLLECTIONS.courses).find({ isPublished: true, isDeleted: { $ne: true } }).project({ _id: 1, title: 1, modulesCount: 1, deadline: 1 }).toArray(),
-      // Keep all courses for overdue detection parity with users route
       db.collection(COLLECTIONS.courses).find({ isDeleted: { $ne: true } }).project({ _id: 1, title: 1, modulesCount: 1, deadline: 1 }).toArray(),
       db.collection(COLLECTIONS.users).find({ role: { $ne: 'admin' } }).project({ _id: 1, fullName: 1, isActive: 1, department: 1 }).toArray(),
       
       db.collection(COLLECTIONS.enrollments).aggregate<EnrollmentFacet>([
+        { $match: enrollmentTimeFilter },
         {
           $set: {
             courseId: { $toString: "$courseId" },
             userId: { $toString: "$userId" },
             departmentNormalized: {
-              $cond: {
-                if: { $or: [{ $eq: ["$department", "Safety"] }, { $eq: ["$department", "safety"] }] },
-                then: "Safety & EHS",
-                else: { $ifNull: ["$department", "General"] }
+              $switch: {
+                branches: [
+                  { 
+                    case: { $in: [{ $toLower: "$department" }, ["safety", "ehs", "hse", "safety & ehs", "safety and ehs"]] }, 
+                    then: "Safety & EHS" 
+                  },
+                  { 
+                    case: { 
+                      $or: [
+                        { $in: [{ $toLower: "$department" }, ["chemical", "process"]] },
+                        { $and: [
+                          { $regexMatch: { input: { $toLower: "$department" }, regex: "chemical" } },
+                          { $regexMatch: { input: { $toLower: "$department" }, regex: "process" } }
+                        ]}
+                      ]
+                    }, 
+                    then: "Chemical / Process" 
+                  }
+                ],
+                default: { $ifNull: ["$department", "General"] }
               }
             }
           }
@@ -87,24 +116,36 @@ export async function GET(request: Request) {
     const aggResult = enrollmentAgg[0] || { byCourse: [], byDept: [], overall: [], rawStatusQuery: [] };
     const rawEnrollments = aggResult.rawStatusQuery;
 
+    // --- ACTIVITY FEED LOGIC ---
+    const [recentEnrollments, recentCertificates] = await Promise.all([
+      db.collection(COLLECTIONS.enrollments)
+        .find({})
+        .project({ userId: 1, courseId: 1, assignedAt: 1, updatedAt: 1 })
+        .sort({ updatedAt: -1, assignedAt: -1 })
+        .limit(10)
+        .toArray(),
+      db.collection(COLLECTIONS.certificates)
+        .find({})
+        .project({ issuedAt: 1, userId: 1, courseId: 1, score: 1 })
+        .sort({ issuedAt: -1 })
+        .limit(10)
+        .toArray()
+    ]);
+
     const traineeEnrollmentMap = new Map<string, DistributionEntry>();
     const userNameMap = new Map<string, string>();
     const userDeptMap = new Map<string, string>();
     const activeCourseIdSet = new Set<string>();
     const courseMap = new Map<string, { title: string; deadlineMs?: number }>();
-    const deptSet = new Set<string>(['General', 'Chemical', 'Maintenance', 'Safety & EHS']);
+    const deptSet = new Set<string>(['General', 'Chemical / Process', 'Maintenance', 'Safety & EHS', 'Logistics', 'Operations']);
     const overdueRows: Array<{ userId: string; dept: string; course: string; daysOverdue: number }> = [];
-
-    const now = new Date();
-    const nowMs = now.getTime();
 
     for (const trainee of allTrainees) {
       const uid = trainee._id.toString();
-      let dept = typeof trainee.department === 'string' && trainee.department.trim() ? trainee.department : 'General';
-      if (dept.toLowerCase() === 'safety') dept = 'Safety & EHS';
+      const dept = normalizeDepartment(trainee.department);
       userDeptMap.set(uid, dept);
       userNameMap.set(uid, typeof trainee.fullName === 'string' && trainee.fullName.trim() ? trainee.fullName : 'Unknown Trainee');
-      deptSet.add(dept);
+      if (dept !== 'All Departments') deptSet.add(dept);
     }
 
     for (const course of activeCourses) {
@@ -122,6 +163,23 @@ export async function GET(request: Request) {
         courseMap.set(cid, { title });
       }
     }
+
+    // --- Format Recent Activity Feed ---
+    const enrollmentEvents = recentEnrollments.map((e) => {
+      const ts = e.updatedAt instanceof Date ? e.updatedAt.getTime() : e.assignedAt instanceof Date ? e.assignedAt.getTime() : 0;
+      const traineeName = userNameMap.get(e.userId?.toString()) || 'Trainee';
+      const courseName = courseMap.get(e.courseId?.toString())?.title || 'Course';
+      return { icon: '📝', text: `Enrolled: ${traineeName} started ${courseName}`, time: ts > 0 ? new Date(ts).toLocaleDateString() : 'Today', color: 'blue', ts };
+    });
+
+    const certificateEvents = recentCertificates.map((c) => {
+      const ts = c.issuedAt instanceof Date ? c.issuedAt.getTime() : 0;
+      const traineeName = userNameMap.get(c.userId?.toString()) || 'Trainee';
+      const courseName = courseMap.get(c.courseId?.toString())?.title || 'Course';
+      return { icon: '🎓', text: `${traineeName} earned certificate in ${courseName}`, time: ts > 0 ? new Date(ts).toLocaleDateString() : 'Recently', score: c.score, color: 'green', ts };
+    });
+
+    const activityFeed = [...enrollmentEvents, ...certificateEvents].sort((a, b) => b.ts - a.ts).slice(0, 10).map(({ ts, ...rest }) => rest);
 
     for (const enrollment of rawEnrollments) {
       const uid = typeof enrollment.userId === 'string' ? enrollment.userId : '';
@@ -179,22 +237,25 @@ export async function GET(request: Request) {
 
     const overallStats = aggResult.overall[0] || { total: 0, completed: 0, avgProgress: 0 };
     const globalAvgProgress = Math.round(overallStats.avgProgress || 0);
-    const complianceRate = overallStats.total > 0 
-      ? Math.round((overallStats.completed / overallStats.total) * 100) 
+    
+    // INDUSTRIAL COMPLIANCE LOGIC: % of active trainees with ZERO overdue courses
+    const compliantUsersCount = allTrainees.filter(t => {
+      const uid = t._id.toString();
+      const info = traineeEnrollmentMap.get(uid);
+      return t.isActive !== false && !info?.hasOverdue;
+    }).length;
+
+    const complianceRate = totalTrainees > 0 
+      ? Math.round((compliantUsersCount / totalTrainees) * 100) 
       : 0;
 
     const completionByTitle = new Map<string, { completed: number; total: number }>();
 
     aggResult.byCourse.forEach((stats) => {
       const courseId = stats._id.toString();
-      if (!activeCourseIdSet.has(courseId)) {
-        return;
-      }
-
+      if (!activeCourseIdSet.has(courseId)) return;
       const courseData = courseMap.get(courseId);
-      if (!courseData) {
-        return;
-      }
+      if (!courseData) return;
 
       const key = courseData.title;
       const existing = completionByTitle.get(key) || { completed: 0, total: 0 };
@@ -207,12 +268,7 @@ export async function GET(request: Request) {
       .reduce<Array<{ name: string; value: number; enrollmentCount: number }>>((acc, [title, stats]) => {
         const enrollmentCount = stats.total;
         const rate = enrollmentCount > 0 ? Math.round((stats.completed / enrollmentCount) * 100) : 0;
-
-        acc.push({
-          name: title,
-          value: rate,
-          enrollmentCount,
-        });
+        acc.push({ name: title, value: rate, enrollmentCount });
         return acc;
       }, [])
       .sort((a, b) => b.value - a.value)
@@ -228,13 +284,14 @@ export async function GET(request: Request) {
       }))
       .sort((a, b) => b.daysOverdue - a.daysOverdue);
 
-    // Build Dept Compliance with placeholders for missing depts
+    // Build Dept Compliance
     const deptMap = new Map<string, { total: number; completed: number; avgProgress: number }>();
     deptSet.forEach(d => deptMap.set(d, { total: 0, completed: 0, avgProgress: 0 }));
 
     aggResult.byDept.forEach((stats) => {
-      let name = stats._id;
-      name = name === 'Unassigned' || !name ? 'General' : name;
+      const name = normalizeDepartment(stats._id);
+      if (name === 'All Departments') return;
+      
       const current = deptMap.get(name) || { total: 0, completed: 0, avgProgress: 0 };
       deptMap.set(name, {
         total: current.total + stats.total,
@@ -243,15 +300,34 @@ export async function GET(request: Request) {
       });
     });
 
-    const deptCompliance = Array.from(deptMap.entries()).map(([name, stats]) => ({
-      name,
-      compliance: Math.round(stats.avgProgress || 0),
-      status: (stats.avgProgress || 0) >= 80 ? 'Compliant' : 'Warning'
-    })).sort((a, b) => a.name.localeCompare(b.name));
+    const deptCompliance = Array.from(deptMap.entries())
+      .filter(([name]) => name !== 'All Departments')
+      .map(([name, stats]) => ({
+        name,
+        compliance: Math.round(stats.avgProgress || 0),
+        status: (stats.avgProgress || 0) >= 80 ? 'Compliant' : 'Warning'
+      })).sort((a, b) => a.name.localeCompare(b.name));
 
     const avgModules = allCourses.length > 0 
       ? Math.round(allCourses.reduce((sum, c) => sum + (typeof c.modulesCount === 'number' ? c.modulesCount : 0), 0) / allCourses.length) 
       : 0;
+
+    // --- LOGIC-BASED INSIGHTS ---
+    const insights: string[] = [];
+    if (complianceRate < 80) {
+      insights.push(`Warning: Overall compliance is at ${complianceRate}%, which is below the 80% industrial target.`);
+    } else {
+      insights.push(`Operational Excellence: Platform compliance sustained at ${complianceRate}%.`);
+    }
+    
+    if (overdueCount > 0) {
+      insights.push(`Action Required: ${overdueCount} trainees have overdue assignments across ${overdueList.length} unique records.`);
+    }
+
+    const lowestDept = [...deptCompliance].sort((a, b) => a.compliance - b.compliance)[0];
+    if (lowestDept && lowestDept.compliance < 70) {
+      insights.push(`Department Alert: ${lowestDept.name} is the lowest performing sector at ${lowestDept.compliance}% compliance.`);
+    }
 
     return NextResponse.json({
       ok: true,
@@ -275,7 +351,9 @@ export async function GET(request: Request) {
           { value: `${globalAvgProgress}%`, label: 'WORKFORCE AVG PROGRESS', color: '#06b6d4' },
           { value: `${avgModules}`, label: 'AVG MODULES/COURSE', color: '#f8fafc' },
           { value: `${totalTrainees > 0 ? Math.round(totalCertificates / totalTrainees) : 0}`, label: 'CERTIFICATES/TRAINEE', color: '#10b981' },
-        ]
+        ],
+        recentActivity: activityFeed,
+        automatedInsights: insights,
       }
     }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
@@ -290,4 +368,3 @@ export async function GET(request: Request) {
     );
   }
 }
-

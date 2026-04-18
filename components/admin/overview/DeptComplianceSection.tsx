@@ -40,12 +40,12 @@ export default function DeptComplianceSection() {
 
   const raw = Array.isArray(adminStats?.deptCompliance) ? adminStats.deptCompliance : [];
   const data: DeptCompliance[] = raw
-    .filter((dept): dept is DeptCompliance => typeof dept?.name === 'string' && Number.isFinite(dept?.compliance))
-    .map((dept) => ({
+    .filter((dept: { name: string; compliance: number }): dept is DeptCompliance => typeof dept?.name === 'string' && Number.isFinite(dept?.compliance))
+    .map((dept: { name: string; compliance: number }) => ({
       name: dept.name,
       compliance: Math.max(0, Math.min(100, Math.round(dept.compliance))),
     }))
-    .sort((a, b) => b.compliance - a.compliance)
+    .sort((a: DeptCompliance, b: DeptCompliance) => b.compliance - a.compliance)
     .slice(0, 15);
 
   if (isLoading) {

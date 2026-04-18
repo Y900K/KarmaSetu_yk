@@ -4,6 +4,7 @@ import { getMongoDb } from '@/lib/mongodb';
 import { resolveSessionUser } from '@/lib/auth/session';
 import { requireSecureAdminMutation } from '@/lib/security/requireSecureAdminMutation';
 import { logSystemEvent } from '@/lib/utils/logger';
+import { normalizeDepartment } from '@/lib/utils/normalization';
 
 type AnnouncementPriority = 'INFO' | 'REMINDER' | 'HIGH' | 'URGENT';
 type AnnouncementStatus = 'sent' | 'scheduled' | 'archived';
@@ -57,7 +58,9 @@ export async function GET(request: Request) {
       id: doc._id.toString(),
       title: typeof doc.title === 'string' ? doc.title : 'Untitled Announcement',
       body: typeof doc.body === 'string' ? doc.body : '',
-      sentTo: Array.isArray(doc.sentTo) ? doc.sentTo.filter((v): v is string => typeof v === 'string') : ['All Departments'],
+      sentTo: Array.isArray(doc.sentTo) 
+        ? doc.sentTo.map(normalizeDepartment) 
+        : ['All Departments'],
       sentBy: typeof doc.sentBy === 'string' ? doc.sentBy : 'Admin',
       date: doc.createdAt instanceof Date ? doc.createdAt.toISOString() : new Date().toISOString(),
       priority: normalizePriority(doc.priority),
@@ -137,7 +140,7 @@ export async function POST(request: Request) {
     const insertDoc = {
       title,
       body: message,
-      sentTo: sentTo.length > 0 ? sentTo : ['All Departments'],
+      sentTo: sentTo.length > 0 ? sentTo.map(normalizeDepartment) : ['All Departments'],
       sentBy: typeof session.user.fullName === 'string' && session.user.fullName.trim().length > 0
         ? session.user.fullName
         : 'Admin',

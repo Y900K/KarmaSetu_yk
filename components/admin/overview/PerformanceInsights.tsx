@@ -9,7 +9,7 @@ type PerformanceMetric = {
 };
 
 export default function PerformanceInsights() {
-  const { adminStats, isLoading } = useGlobalStats();
+  const { adminStats, isLoading, automatedInsights } = useGlobalStats();
 
   const metrics: PerformanceMetric[] = adminStats?.performanceInsights || [
     { value: '0%', label: 'OVERALL PASS RATE', color: '#f59e0b' },
@@ -29,7 +29,7 @@ export default function PerformanceInsights() {
         <Sparkles className="w-4 h-4 text-emerald-400" />
         Performance Insights
       </h3>
-      <div className="grid grid-cols-2 gap-4 relative z-10">
+      <div className="grid grid-cols-2 gap-4 relative z-10 mb-6">
         {metrics.map((m) => {
           const isWarning = m.color === '#f59e0b';
           const isInfo = m.color === '#06b6d4';
@@ -45,6 +45,28 @@ export default function PerformanceInsights() {
           );
         })}
       </div>
+
+      {automatedInsights.length > 0 && (
+        <div className="space-y-3 relative z-10 border-t border-slate-800/50 pt-4 animate-in fade-in slide-in-from-top-2 duration-500">
+          <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Intelligence Feed</h4>
+          {automatedInsights.map((insight, idx) => {
+            const isWarning = insight.toLowerCase().includes('warning') || insight.toLowerCase().includes('alert') || insight.toLowerCase().includes('action required');
+            return (
+              <div 
+                key={idx} 
+                className={`flex gap-3 items-start text-xs font-medium p-3 rounded-lg border leading-relaxed ${
+                  isWarning 
+                    ? 'bg-amber-500/5 border-amber-500/10 text-amber-200/90' 
+                    : 'bg-emerald-500/5 border-emerald-500/10 text-emerald-200/90'
+                }`}
+              >
+                <div className={`mt-0.5 w-1.5 h-1.5 rounded-full shrink-0 ${isWarning ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]'}`} />
+                {insight}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

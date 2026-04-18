@@ -14,6 +14,7 @@ import {
   normalizeVideoTitles,
   resolveModulesCount,
   validateQuizQuestions,
+  CourseQuizQuestion,
 } from '@/lib/courseUtils';
 import { importThumbnailAsset } from '@/lib/server/courseThumbnail';
 
@@ -207,7 +208,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ cour
         );
         return NextResponse.json({ ok: false, message: validation.message }, { status: 400 });
       }
-      updateSet.quiz = { questions: validation.questions };
+      updateSet.quiz = { questions: validation.questions as CourseQuizQuestion[] };
     }
 
     if (typeof body.quizTimeLimit === 'number') {
@@ -250,25 +251,45 @@ export async function PUT(request: Request, { params }: { params: Promise<{ cour
       updateSet.deadline = new Date(body.deadline);
     }
 
-    const updateDoc: Record<string, unknown> = {
-      $set: updateSet,
-      $inc: { version: 1 },
-    };
+    const newVersion = (existingCourse.version || 1) + 1;
+    const now = new Date();
 
+    // Prepare the new document by merging existing with updates
+    const newCourseDoc = {
+      ...existingCourse,
+      ...updateSet,
+      version: newVersion,
+      isLatest: true,
+      updatedAt: now,
+    };
+    delete (newCourseDoc as any)._id;
+
+    // Apply unsets to the new document object
     if (Object.keys(updateUnset).length > 0) {
-      updateDoc.$unset = updateUnset;
+      for (const key of Object.keys(updateUnset)) {
+        delete (newCourseDoc as any)[key];
+      }
     }
 
+    const insertResult = await db.collection(COLLECTIONS.courses).insertOne(newCourseDoc);
+    const newCourseId = insertResult.insertedId.toString();
+
+    // Mark original document as legacy
     await db.collection(COLLECTIONS.courses).updateOne(
-      { _id: new ObjectId(courseId), isDeleted: { $ne: true } },
-      updateDoc
+      { _id: new ObjectId(courseId) },
+      { $set: { isLatest: false, isPublished: false, updatedAt: now } }
     );
 
     await logSystemEvent(
       'INFO',
       'admin_course_update',
-      'Course updated by admin.',
-      { actorAdminId: session.user._id.toString(), courseId },
+      'Course versioned update created by admin.',
+      { 
+        actorAdminId: session.user._id.toString(), 
+        originalCourseId: courseId, 
+        newCourseId,
+        version: newVersion 
+      },
       session.user._id.toString()
     );
 
@@ -284,11 +305,18 @@ export async function PUT(request: Request, { params }: { params: Promise<{ cour
           .toArray();
 
       if (trainees.length > 0) {
-        const now = new Date();
+        // Find all course IDs that belong to the same logical course (externalId)
+        const logicalCourseIds = await db.collection(COLLECTIONS.courses)
+          .find({ externalId: existingCourse.externalId })
+          .project({ _id: 1 })
+          .toArray()
+          .then(docs => docs.map(d => d._id.toString()));
+
         const assignmentOps = trainees.map((trainee) => {
+          const traineeId = trainee._id.toString();
           const setOnInsert: Record<string, unknown> = {
-            userId: trainee._id.toString(),
-            courseId: courseId,
+            userId: traineeId,
+            courseId: newCourseId,
             progressPct: 0,
             completedModuleIds: [],
             assignedAt: now,
@@ -300,7 +328,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ cour
 
           return {
             updateOne: {
-              filter: { userId: trainee._id.toString(), courseId: courseId },
+              // Only enroll if they don't have ANY version of this logical course
+              filter: { userId: traineeId, courseId: { $in: logicalCourseIds } },
               update: {
                 $setOnInsert: setOnInsert,
                 $set: {
@@ -317,7 +346,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ cour
       }
     }
 
-    return NextResponse.json({ ok: true, message: 'Course updated.' });
+    return NextResponse.json({ ok: true, message: 'Course updated and versioned.', courseId: newCourseId });
   } catch (error) {
     await logSystemEvent(
       'ERROR',

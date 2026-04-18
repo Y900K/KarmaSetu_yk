@@ -36,9 +36,9 @@ export default function SidebarContent({
   const completedItems = completedLessonsCount + (course.documents.length === 0 ? 0 : viewedDocIds.length);
   const progressPercent = totalItems === 0 ? 0 : Math.round((completedItems / totalItems) * 100);
 
-  const docsUnlocked = completedLessonsCount === course.lessons.length;
+  const docsUnlocked = course.isCompleted || completedLessonsCount === course.lessons.length;
   const hasViewedAllDocs = course.documents.length === 0 || course.documents.every(doc => viewedDocIds.includes(doc.id));
-  const quizUnlocked = docsUnlocked && hasViewedAllDocs;
+  const quizUnlocked = course.isCompleted || (docsUnlocked && hasViewedAllDocs);
 
   // SVG Ring Constants
   const radius = 24;

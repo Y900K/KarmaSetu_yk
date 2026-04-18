@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { useAPI } from '@/lib/hooks/useAPI';
+import { useGlobalStats } from '@/context/GlobalStatsContext';
 
 type ActivityItem = {
   icon: string;
@@ -13,11 +13,10 @@ import { useLanguage } from '@/context/LanguageContext';
 
 export default function RecentActivityFeed() {
   const { t } = useLanguage();
-  const { data, isLoading } = useAPI<{ ok: boolean; activity: ActivityItem[] }>('/api/admin/activity?limit=10');
-  const activity = data?.ok ? data.activity : [];
-  const visibleActivity = activity.slice(0, 3);
+  const { recentActivity: activity, isLoading } = useGlobalStats();
+  const visibleActivity = activity.slice(0, 4);
 
-  if (isLoading) {
+  if (isLoading && activity.length === 0) {
     return <div className="bg-slate-900/40 backdrop-blur-md border border-slate-800/60 rounded-2xl p-6 h-64 animate-pulse" />;
   }
 

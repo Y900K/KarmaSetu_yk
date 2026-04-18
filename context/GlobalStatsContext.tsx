@@ -55,14 +55,17 @@ type GlobalStats = {
     validCertificates: number;
     compliance: string;
     overdueTrainees: number;
-    overdueList: Array<{ name: string; dept: string; course: string; daysOverdue: number }>;
     totalCourses: number;
-    distribution: Array<{ name: string; value: number; color: string }>;
-    completionRates: Array<{ name: string; value: number }>;
-    deptCompliance: Array<{ name: string; compliance: number }>;
     performanceInsights: Array<{ value: string; label: string; color: string }>;
+    distribution: Array<{ name: string; value: number; color: string }>;
+    deptCompliance: Array<{ name: string; compliance: number; status?: string }>;
+    completionRates: Array<{ name: string; value: number }>;
+    overdueList: Array<{ name: string; dept: string; course: string; daysOverdue: number }>;
   };
-
+  recentActivity: Array<{ icon: string; text: string; time: string; score?: number | string; color: string }>;
+  automatedInsights: string[];
+  timeframe: string;
+  setTimeframe: (tf: string) => void;
   isLoading: boolean;
   isValidating: boolean;
   mutate: () => Promise<unknown>;
@@ -71,6 +74,7 @@ type GlobalStats = {
 const GlobalStatsContext = createContext<GlobalStats | undefined>(undefined);
 
 export function GlobalStatsProvider({ children, scope = 'auto' }: { children: ReactNode; scope?: 'auto' | 'admin' | 'trainee' }) {
+  const [timeframe, setTimeframe] = React.useState('all');
   const pathname = usePathname();
   const isAdmin =
     scope === 'admin'
@@ -79,10 +83,16 @@ export function GlobalStatsProvider({ children, scope = 'auto' }: { children: Re
       ? false
       : pathname.startsWith('/admin') || pathname === '/dashboard';
   
-  const endpoint = isAdmin ? '/api/admin/overview/stats' : '/api/trainee/training/overview';
+  const endpoint = isAdmin 
+    ? `/api/admin/overview/stats?timeframe=${timeframe}` 
+    : `/api/trainee/training/overview`;
+    
   const { data, isLoading, isValidating, mutate } = useAPI<{
     ok: boolean;
-    stats?: GlobalStats['adminStats'];
+    stats?: GlobalStats['adminStats'] & { 
+      recentActivity?: GlobalStats['recentActivity'];
+      automatedInsights?: string[];
+    };
     courses?: TraineeCourse[];
     certificateCount?: number;
     totalEnrollmentCount?: number;
@@ -90,14 +100,12 @@ export function GlobalStatsProvider({ children, scope = 'auto' }: { children: Re
     totalStudyTimeMs?: number;
   }>(
     endpoint,
-    isAdmin
-      ? {
-          refreshInterval: 15_000,
-          dedupingInterval: 5_000,
-          revalidateOnFocus: true,
-          revalidateOnReconnect: true,
-        }
-      : undefined
+    {
+      refreshInterval: 15_000,
+      dedupingInterval: 5_000,
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+    }
   );
 
   const courses = useMemo(() => {
@@ -154,6 +162,8 @@ export function GlobalStatsProvider({ children, scope = 'auto' }: { children: Re
       ? data.totalStudyTimeMs
       : courses.reduce((sum, course) => sum + (typeof course.studyTimeMs === 'number' ? course.studyTimeMs : 0), 0);
   const adminStats = isAdmin && data?.ok ? data.stats : undefined;
+  const recentActivity = isAdmin && data?.ok ? (data.stats?.recentActivity || []) : [];
+  const automatedInsights = isAdmin && data?.ok ? (data.stats?.automatedInsights || []) : [];
 
   return (
     <GlobalStatsContext.Provider
@@ -169,6 +179,10 @@ export function GlobalStatsProvider({ children, scope = 'auto' }: { children: Re
         totalStudyTimeMs,
         resumeCourse,
         adminStats,
+        recentActivity,
+        automatedInsights,
+        timeframe,
+        setTimeframe,
         isLoading,
         isValidating,
         mutate,

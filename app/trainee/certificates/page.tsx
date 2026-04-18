@@ -337,8 +337,10 @@ function CertificatesContent() {
       {/* Preview Modal */}
       {selectedCert && (
         <Modal isOpen={true} onClose={() => setSelectedCert(null)} title="OFFICIAL CERTIFICATION RECORD" maxWidth="max-w-4xl">
-          <div className="scale-[0.8] sm:scale-100 origin-center -my-10 sm:my-0">
-            <PremiumCertificate cert={selectedCert} />
+          <div className="w-full flex items-center justify-center overflow-x-auto overflow-y-hidden py-4 sm:p-0 no-scrollbar">
+            <div className="min-w-[760px] sm:min-w-0 w-full sm:w-auto transform scale-[0.45] xs:scale-[0.55] sm:scale-100 origin-top sm:origin-center transition-transform">
+              <PremiumCertificate cert={selectedCert} />
+            </div>
           </div>
           
           <div className="flex flex-col sm:flex-row justify-end gap-3 mt-8 pt-6 border-t border-slate-100">

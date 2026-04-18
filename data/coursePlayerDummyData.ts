@@ -54,6 +54,7 @@ export interface Course {
   lastActiveModuleId?: string;
   lastActiveView?: 'video' | 'pdf' | 'quiz' | 'quiz-results';
   videoCurrentTime?: number;
+  isCompleted?: boolean;
 }
 
 export const COURSE_REGISTRY: Record<string, Course> = {};

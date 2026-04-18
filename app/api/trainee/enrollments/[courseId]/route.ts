@@ -5,6 +5,7 @@ import { getMongoDb } from '@/lib/mongodb';
 import { COLLECTIONS } from '@/lib/db/collections';
 import { requireTrainee } from '@/lib/auth/requireTrainee';
 import { normalizeCourseModules } from '@/lib/courseUtils';
+import { createNotification } from '@/lib/notifications';
 
 const MAX_STUDY_TIME_INCREMENT_MS = 60 * 60 * 1000;
 
@@ -49,10 +50,20 @@ async function findCourse(db: Awaited<ReturnType<typeof getMongoDb>>, courseId: 
       .findOne({ _id: new ObjectId(courseId), isDeleted: { $ne: true } });
   }
   if (!dbCourse) {
+    // Prefer the latest version when searching by code or slug
     dbCourse = await db.collection(COLLECTIONS.courses).findOne({
       $or: [{ code: courseId }, { slug: courseId }],
       isDeleted: { $ne: true },
+      isLatest: { $ne: false }
     });
+
+    // Fallback to any version if latest not found (e.g. for historical links)
+    if (!dbCourse) {
+      dbCourse = await db.collection(COLLECTIONS.courses).findOne({
+        $or: [{ code: courseId }, { slug: courseId }],
+        isDeleted: { $ne: true },
+      });
+    }
   }
   if (dbCourse) {
     return {
@@ -63,6 +74,7 @@ async function findCourse(db: Awaited<ReturnType<typeof getMongoDb>>, courseId: 
       quizQuestionCount: Array.isArray(dbCourse.quiz?.questions) ? dbCourse.quiz.questions.length : 0,
       code: typeof dbCourse.code === 'string' ? dbCourse.code : undefined,
       slug: typeof dbCourse.slug === 'string' ? dbCourse.slug : undefined,
+      externalId: typeof dbCourse.externalId === 'string' ? dbCourse.externalId : undefined,
     };
   }
 
@@ -137,54 +149,77 @@ export async function POST(request: Request, { params }: { params: Promise<{ cou
     const userId = session.user._id.toString();
     const now = new Date();
 
-    // FIX: Store user's department on enrollment for department-based compliance reporting
-    const userDepartment = typeof session.user.department === 'string' ? session.user.department : undefined;
+    // Identify all version IDs for this logical course to check for existing enrollments
+    let logicalCourseIds = [resolvedCourseId];
+    if (course.externalId) {
+      const versions = await db.collection(COLLECTIONS.courses)
+        .find({ externalId: course.externalId })
+        .project({ _id: 1 })
+        .toArray();
+      logicalCourseIds = versions.map(v => v._id.toString());
+    }
 
+    const enrollmentFilter = { 
+      userId, 
+      courseId: { $in: Array.from(new Set(logicalCourseIds)) } 
+    };
+
+    const existingEnrollments = await db
+      .collection(COLLECTIONS.enrollments)
+      .find(enrollmentFilter)
+      .sort({ updatedAt: -1 })
+      .toArray();
+
+    if (existingEnrollments.length > 0) {
+      // If trainee already has an enrollment in any version, let them continue on that version.
+      // We don't force them to migrate to the latest version by default.
+      const currentEnrollment = existingEnrollments[0];
+      
+      // If it was already completed, just return success
+      if (currentEnrollment.status === 'completed') {
+        return NextResponse.json({ 
+          ok: true, 
+          message: 'You have already completed a version of this course.',
+          courseId: currentEnrollment.courseId 
+        });
+      }
+
+      // Otherwise, ensure it's marked as in_progress if it was just assigned
+      if (currentEnrollment.status === 'assigned') {
+        await db.collection(COLLECTIONS.enrollments).updateOne(
+          { _id: currentEnrollment._id },
+          { $set: { status: 'in_progress', updatedAt: now } }
+        );
+      }
+
+      return NextResponse.json({ 
+        ok: true, 
+        message: 'Continuing existing enrollment.', 
+        courseId: currentEnrollment.courseId 
+      });
+    }
+
+    // No existing enrollment found in any version, create new one for the LATEST version
+    const userDepartment = typeof session.user.department === 'string' ? session.user.department : undefined;
     const setOnInsertFields: Record<string, unknown> = {
       userId,
       courseId: resolvedCourseId,
       assignedAt: now,
       studyTimeMs: 0,
+      progressPct: 0,
+      completedModuleIds: [],
+      status: 'in_progress',
+      updatedAt: now,
     };
     if (userDepartment) {
       setOnInsertFields.department = userDepartment;
     }
 
-    const enrollmentFilter = buildEnrollmentFilter(userId, resolvedCourseId, course.code, course.slug);
-    const existingRecords = await db
-      .collection(COLLECTIONS.enrollments)
-      .find(enrollmentFilter)
-      .project({ _id: 1 })
-      .toArray();
-
-    if (existingRecords.length > 0) {
-      await db.collection(COLLECTIONS.enrollments).updateMany(
-        enrollmentFilter,
-        {
-          $set: {
-            courseId: resolvedCourseId,
-            progressPct: 0,
-            completedModuleIds: [],
-            status: 'in_progress',
-            updatedAt: now,
-          },
-        }
-      );
-    } else {
-      await db.collection(COLLECTIONS.enrollments).updateOne(
-        { userId, courseId: resolvedCourseId },
-        {
-          $setOnInsert: setOnInsertFields,
-          $set: {
-            progressPct: 0,
-            completedModuleIds: [],
-            status: 'in_progress',
-            updatedAt: now,
-          },
-        },
-        { upsert: true }
-      );
-    }
+    await db.collection(COLLECTIONS.enrollments).updateOne(
+      { userId, courseId: resolvedCourseId },
+      { $setOnInsert: setOnInsertFields },
+      { upsert: true }
+    );
 
     await db.collection(COLLECTIONS.enrollmentAudit).insertOne({
       userId,
@@ -195,10 +230,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ cou
       createdAt: now,
       metadata: {
         endpoint: '/api/trainee/enrollments/[courseId]#POST',
+        isNewVersion: !!course.externalId
       },
     });
 
-    return NextResponse.json({ ok: true, message: 'Enrollment started.' });
+    return NextResponse.json({ ok: true, message: 'Enrollment started.', courseId: resolvedCourseId });
   } catch (error) {
     const details = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
@@ -328,6 +364,16 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ co
         },
         { upsert: true }
       );
+
+      // Notify Admin
+      await createNotification(db, {
+        role: 'admin',
+        type: 'trainee_feedback',
+        title: 'New Course Feedback',
+        desc: `${session.user.fullName || 'A trainee'} submitted feedback for ${course.title}`,
+        link: '/admin/reports/feedback',
+        metadata: { userId, courseId: resolvedCourseId, rating: body.courseFeedback.rating }
+      });
     }
 
     await db.collection(COLLECTIONS.enrollments).updateOne(
@@ -349,6 +395,18 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ co
         quizPassed: body.quizAttempt?.passed
       },
     });
+
+    // Notify Admin on completion
+    if (status === 'completed') {
+      await createNotification(db, {
+        role: 'admin',
+        type: 'trainee_completion',
+        title: 'Course Completed',
+        desc: `${session.user.fullName || 'A trainee'} has completed ${course.title}`,
+        link: `/admin/users/${userId}`,
+        metadata: { userId, courseId: resolvedCourseId }
+      });
+    }
 
     // AUTOMATIC CERTIFICATE GENERATION
     let certNo = null;
@@ -377,6 +435,17 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ co
           verificationHash: buildVerificationHash(`${userId}:${resolvedCourseId.toString()}:${certNo}`),
           createdAt: now,
           updatedAt: now,
+        });
+
+        // Notify Trainee
+        await createNotification(db, {
+          userId,
+          role: 'trainee',
+          type: 'certificate_earned',
+          title: 'Certificate Earned!',
+          desc: `Congratulations! You have earned a certificate for ${course.title}.`,
+          link: '/trainee/certificates',
+          metadata: { certNo, courseId: resolvedCourseId }
         });
 
         // Also update enrollment record with certificate info

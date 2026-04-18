@@ -920,14 +920,14 @@ interface LanguageContextType {
 }
 
 const LanguageContext = createContext<LanguageContextType>({
-  language: 'EN',
+  language: 'HINGLISH',
   setLanguage: () => {},
   t: (key) => key,
 });
 
 export const useLanguage = () => useContext(LanguageContext);
 
-export function LanguageProvider({ children }: { children: React.ReactNode }) {  const [language, setLang] = useState<Lang>('EN');
+export function LanguageProvider({ children }: { children: React.ReactNode }) {  const [language, setLang] = useState<Lang>('HINGLISH');
 
   React.useEffect(() => {
     const saved = localStorage.getItem('ks_language');

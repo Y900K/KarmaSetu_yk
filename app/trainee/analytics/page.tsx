@@ -55,30 +55,45 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
 }
 
 export default function TraineeAnalyticsPage() {
-  const [data, setData] = useState<TraineeAnalyticsData | null>(null);
+  const [data, setData] = useState<TraineeAnalyticsData & { insights?: string[] } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [timeframe, setTimeframe] = useState('30d');
 
   useEffect(() => {
-    async function fetchAnalytics() {
+    let interval: NodeJS.Timeout;
+
+    async function fetchAnalytics(isSilent = false) {
+      if (!isSilent) setIsLoading(true);
       try {
-        const res = await fetch('/api/trainee/analytics');
-        const json = (await res.json()) as TraineeAnalyticsResponse;
+        const res = await fetch(`/api/trainee/analytics?timeframe=${timeframe}`);
+        const json = (await res.json()) as TraineeAnalyticsResponse & { insights?: string[] };
         if (json.ok) {
-          setData({ stats: json.stats, charts: json.charts });
+          setData(json);
         }
       } catch (err) {
         console.error(err);
       } finally {
-        setIsLoading(false);
+        if (!isSilent) setIsLoading(false);
       }
     }
+
     fetchAnalytics();
-  }, []);
+    interval = setInterval(() => fetchAnalytics(true), 15000);
+
+    return () => clearInterval(interval);
+  }, [timeframe]);
+
+  const timeframeOptions = [
+    { label: '7D', value: '7d' },
+    { label: '30D', value: '30d' },
+    { label: '90D', value: '90d' },
+    { label: 'ALL', value: 'all' }
+  ];
 
   return (
     <TraineeLayout>
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
+      <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="flex items-center gap-3">
           <div className="h-8 w-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
             <BarChart3 className="h-4 w-4 text-cyan-400" />
           </div>
@@ -87,7 +102,36 @@ export default function TraineeAnalyticsPage() {
              <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">Personal Performance Metrics & Telemetry</p>
           </div>
         </div>
+
+        <div className="flex items-center gap-2 bg-slate-900/50 backdrop-blur-xl border border-slate-700/50 p-1 rounded-xl shadow-lg self-start md:self-auto">
+          {timeframeOptions.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => setTimeframe(opt.value)}
+              className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all duration-300 ${
+                timeframe === opt.value
+                  ? 'bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-lg shadow-blue-500/20'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </div>
+
+      {data?.insights && data.insights.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 animate-in slide-in-from-top-4 duration-700">
+           {data.insights.map((insight, i) => (
+             <div key={i} className="bg-gradient-to-br from-blue-500/5 to-cyan-500/5 border border-white/5 rounded-xl p-4 flex gap-3 items-start group hover:border-cyan-500/20 transition-all duration-500">
+                <div className="h-6 w-6 rounded-lg bg-cyan-500/10 flex items-center justify-center text-cyan-400 mt-0.5 shrink-0 group-hover:scale-110 transition-transform">
+                  <Zap className="h-3 w-3 fill-current" />
+                </div>
+                <p className="text-xs font-medium text-slate-300 leading-relaxed">{insight}</p>
+             </div>
+           ))}
+        </div>
+      )}
 
       {/* KPI Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">

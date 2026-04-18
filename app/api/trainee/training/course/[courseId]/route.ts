@@ -161,6 +161,8 @@ export async function GET(
     const { rawScore, percentScore } = getStoredScoreState(enrollment?.score, quizQuestions.length);
     const passingScore = typeof course.passingScore === 'number' ? course.passingScore : 70;
 
+    const isCompleted = enrollment?.status === 'completed';
+
     const translatedCourse: Course = {
       id: resolvedCourseId,
       title,
@@ -181,11 +183,11 @@ export async function GET(
       passingScore,
       quizTimeLimit: typeof course.quizTimeLimit === 'number' ? course.quizTimeLimit : 15,
       viewedDocIds,
-      lessons,
+      lessons: isCompleted ? lessons.map(l => ({ ...l, completed: true, locked: false })) : lessons,
       documents,
       quiz: {
         id: `quiz_${resolvedCourseId}`,
-        unlocked: lessons.length === 0 || storedCompletedCount >= lessons.length,
+        unlocked: isCompleted || lessons.length === 0 || storedCompletedCount >= lessons.length,
         attempted: percentScore !== null,
         score: rawScore,
         passed: percentScore !== null ? percentScore >= passingScore : false,
@@ -194,6 +196,7 @@ export async function GET(
       lastActiveModuleId: enrollment?.lastActiveModuleId,
       lastActiveView: enrollment?.lastActiveView as 'video' | 'pdf' | 'quiz' | 'quiz-results' | undefined,
       videoCurrentTime: enrollment?.videoCurrentTime,
+      isCompleted,
     };
 
     return NextResponse.json({ ok: true, course: translatedCourse });

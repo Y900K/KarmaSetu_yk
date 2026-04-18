@@ -27,70 +27,7 @@ export const TRAINEES = [
   { id: "EMP-008", name: "Neha Gupta", email: "neha@karmasetu.com", department: "HR / Admin", role: "HR / Admin", progress: 95, status: "Active", lastLogin: "Today, 8:00 AM", phone: "+91 21098 76543" },
 ];
 
-export const COURSES = [
-  { 
-    id: "course_chemical_2026", title: "Chemical Safety Handbook 2026", category: "Industrial Health & Safety", level: "Intermediate", modules: 5, enrolled: 84, completionRate: 72, deadline: "2026-12-31", status: "Active", theme: "from-purple-600 to-violet-500", icon: "🧪", 
-    instructorName: "Dr. Arnab S.",
-    instructorRole: "Lead Safety Director",
-    objectives: [
-      "Master GHS labeling and SDS interpretation requirements",
-      "Implement effective spill containment and emergency response",
-      "Select and inspect appropriate PPE for chemical hazards",
-      "Ensure environmental compliance in hazardous waste disposal"
-    ],
-    description: "Comprehensive industrial chemical handling, GHS protocols, and safety compliance.", passingScore: 80, departments: ["Chemical / Process", "Safety & EHS"],
-    videoUrl: "https://www.youtube.com/watch?v=ooVXDYzrMA8", pdfUrl: "https://www.osha.gov/sites/default/files/2021-07/Workplace%20Safety%20%26amp%3B%20Heath%20%28Chemical%20and%20Machine%20Hazards%20Trainer%20Guide.pdf",
-    quiz: {
-      questions: [
-        { text: "What is the primary purpose of an SDS?", options: ["Pricing", "Salaries", "Safety info", "Inventory"], correct: 2 },
-      ]
-    }
-  },
-  { 
-    id: "course_forklift_2026", title: "Forklift Safety & Operations 2026", category: "Machine Operations", level: "Advanced", modules: 4, enrolled: 12, completionRate: 45, deadline: "2026-05-30", status: "Active", theme: "from-amber-600 to-yellow-500", icon: "🚜", 
-    instructorName: "Captain Suresh",
-    instructorRole: "Logistics & Operations Head",
-    objectives: [
-      "Understand the stability triangle and load capacity limits",
-      "Perform comprehensive pre-operation mechanical inspections",
-      "Navigate high-traffic warehouse zones and intersections safely",
-      "Master safe driving speeds and pedestrian awareness protocols"
-    ],
-    description: "Comprehensive forklift operator safety and mechanical inspection training.", passingScore: 85, departments: ["Maintenance", "Production"],
-    videoUrl: "https://www.youtube.com/watch?v=fPhynD2yuBE", pdfUrl: "https://ehs.oregonstate.edu/sites/ehs.oregonstate.edu/files/pdf/occsafety/or-osha_forklift_workbook.pdf",
-    quiz: {
-      questions: [
-        { text: "Which concept explains forklift balance?", options: ["Stability Triangle", "Power Circle", "Gravity Square", "Weight Line"], correct: 0 },
-        { text: "When should inspections be done?", options: ["Weekly", "Before shift", "Monthly", "When broken"], correct: 1 },
-      ]
-    }
-  },
-  { 
-    id: "course_fire_2026", title: "Fire Safety & Emergency Response 2026", category: "Health & Safety", level: "Beginner", modules: 3, enrolled: 95, completionRate: 88, deadline: "2026-06-15", status: "Active", theme: "from-red-600 to-orange-500", icon: "🔥", 
-    instructorName: "Chief Inspector Khanna",
-    instructorRole: "Fire Dept. Safety Consultant",
-    objectives: [
-      "Identify industrial fire hazards and implement prevention",
-      "Master the PASS technique for various fire extinguishers",
-      "Coordinate effective evacuation and emergency responses",
-      "Classify industrial fires and select the correct suppression"
-    ],
-    description: "Essential workplace fire prevention, extinguisher usage, and evacuation protocols.", passingScore: 90, departments: ["All Departments"],
-    videoUrl: "https://www.youtube.com/watch?v=UlKS_A7Xg1E", pdfUrl: "https://www.osha.gov/sites/default/files/2019-03/fireprotection.pdf",
-    quiz: {
-      questions: [
-        { text: "PASS stands for?", options: ["Pull, Aim, Squeeze, Sweep", "Push, Align, Stop, Start", "Point, Alert, Stay, Safe", "None"], correct: 0 },
-        { text: "Which extinguisher is for electrical fires?", options: ["Water", "CO2", "Foam", "Wait Chemical"], correct: 1 },
-      ]
-    }
-  },
-];
-
-export const CERTIFICATES = [
-  { certNo: "CERT-2026-001", trainee: "Ravi Sharma", course: "Chemical Safety Handbook 2026", issueDate: "Jan 10, 2026", expiry: "Jan 10, 2027", score: 88, status: "Valid" },
-  { certNo: "CERT-2026-002", trainee: "Priya Verma", course: "Chemical Safety Handbook 2026", issueDate: "Feb 3, 2026", expiry: "Feb 3, 2027", score: 74, status: "Valid" },
-  { certNo: "CERT-2026-003", trainee: "Anjali Singh", course: "Fire Safety & Emergency Response 2026", issueDate: "Mar 1, 2026", expiry: "Mar 1, 2027", score: 96, status: "Valid" },
-];
+// ... (COURSES AND CERTIFICATES)
 
 export const DEPARTMENTS = [
   { name: "Safety & EHS", compliance: 94, status: "Compliant" },
@@ -99,16 +36,11 @@ export const DEPARTMENTS = [
   { name: "Maintenance", compliance: 67, status: "At Risk" },
   { name: "Electrical", compliance: 73, status: "At Risk" },
   { name: "Chemical / Process", compliance: 58, status: "Non-Compliant" },
+  { name: "Logistics", compliance: 85, status: "Compliant" },
+  { name: "Operations", compliance: 79, status: "Warning" },
 ];
 
-export const MONTHLY_COMPLETIONS = [
-  { month: "Oct", completions: 32, certificates: 18 },
-  { month: "Nov", completions: 41, certificates: 25 },
-  { month: "Dec", completions: 38, certificates: 22 },
-  { month: "Jan", completions: 52, certificates: 35 },
-  { month: "Feb", completions: 44, certificates: 28 },
-  { month: "Mar", completions: 47, certificates: 31 },
-];
+// ... (MONTHLY_COMPLETIONS)
 
 export const DEPT_PERFORMANCE = [
   { rank: 1, dept: "Safety & EHS", avgScore: 91, completions: 68, compliance: 94 },
@@ -119,40 +51,10 @@ export const DEPT_PERFORMANCE = [
   { rank: 6, dept: "Chemical / Process", avgScore: 64, completions: 28, compliance: 58 },
 ];
 
-export const COURSE_ANALYSIS = [
-  { course: "Chemical Safety Handbook 2026", enrolled: 84, completed: 62, avgScore: 84, passRate: 88 },
-  { course: "Forklift Safety & Operations 2026", enrolled: 12, completed: 5, avgScore: 81, passRate: 92 },
-  { course: "Fire Safety & Emergency Response 2026", enrolled: 95, completed: 84, avgScore: 89, passRate: 93 },
-];
-
-export const RECENT_ACTIVITY = [
-  { type: "completion", color: "green", icon: "👤", text: "Ravi Sharma completed Chemical Safety 2026", score: "88%", time: "2 hours ago" },
-  { type: "certificate", color: "blue", icon: "🏅", text: "Certificate issued to Priya Verma", score: null, time: "5 hours ago" },
-  { type: "overdue", color: "yellow", icon: "⚠️", text: "Suresh Kumar's Safety training overdue", score: null, time: "Yesterday" },
-  { type: "enrollment", color: "green", icon: "👤", text: "Anjali Singh enrolled in Fire Safety 2026", score: null, time: "Yesterday" },
-  { type: "admin", color: "blue", icon: "🔧", text: "Admin verified Chemical Safety compliance", score: null, time: "2 days ago" },
-];
-
-export const ALERTS = [
-  { id: 1, level: "HIGH", color: "red", icon: "🔴", title: "18 trainees have overdue compliance training", desc: "Deadline was March 10, 2026. Immediate action required.", action: "View Trainees" },
-  { id: 2, level: "MEDIUM", color: "yellow", icon: "🟡", title: "6 certificates expiring within 30 days", desc: "Fire Safety certificates need renewal before April 10.", action: "Review Certificates" },
-  { id: 3, level: "INFO", color: "blue", icon: "🔵", title: "New course added: OSHA Compliance 2026", desc: "Assign this course to Safety Officers and Supervisors.", action: "Assign Now" },
-];
-
-export const ANNOUNCEMENTS = [
-  { id: 1, title: "Fire Drill Scheduled — March 20, 2026", body: "All departments must participate in the mandatory fire evacuation drill at Plant A. Attendance is compulsory and will be recorded.", sentTo: ["All Departments"], sentBy: "Manish Bhardwaj", date: "March 12, 2026", priority: "HIGH" },
-  { id: 2, title: "New Course Added: Chemical Safety 2026", body: "A new comprehensive course on Chemical Safety has been added. Safety Officers and Supervisors must complete it by April 30.", sentTo: ["Safety & EHS", "Production"], sentBy: "Manish Bhardwaj", date: "March 10, 2026", priority: "INFO" },
-  { id: 3, title: "Certificate Renewal Reminder", body: "12 trainees have certificates expiring within 30 days. Please ensure they re-complete the relevant courses before expiry.", sentTo: ["All Departments"], sentBy: "Manish Bhardwaj", date: "March 8, 2026", priority: "REMINDER" },
-];
-
-export const OVERDUE_TRAINEES = [
-  { name: "Suresh Kumar", dept: "Electrical", course: "Electrical Safety Basics", daysOverdue: 8 },
-  { name: "Mukesh Yadav", dept: "Maintenance", course: "Machine Operations Level 1", daysOverdue: 5 },
-  { name: "Deepak Tiwari", dept: "Production", course: "Fire Safety Protocol", daysOverdue: 21 },
-];
+// ... (COURSE_ANALYSIS, RECENT_ACTIVITY, ALERTS, ANNOUNCEMENTS, OVERDUE_TRAINEES)
 
 export const ROLE_OPTIONS = ["Worker / Operator", "Supervisor / Team Lead", "Manager / Department Head", "Safety Officer", "HR / Admin"];
-export const DEPT_OPTIONS = ["All Departments", "Safety & EHS", "Production", "Maintenance", "Quality Control", "Electrical", "Chemical / Process", "HR / Admin"];
+export const DEPT_OPTIONS = ["Safety & EHS", "Chemical / Process", "Maintenance", "Production", "Quality Control", "Electrical", "HR / Admin", "Logistics", "Operations", "General"];
 export const PRIORITY_OPTIONS = ["INFO", "REMINDER", "HIGH", "URGENT"];
 export const COURSE_COLOR_THEMES = [
   { label: "Fire Red", value: "from-red-600 to-orange-500" },

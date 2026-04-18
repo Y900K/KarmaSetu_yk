@@ -3,6 +3,7 @@ import { ObjectId } from 'mongodb';
 import { COLLECTIONS } from '@/lib/db/collections';
 import { requireSecureAdminMutation } from '@/lib/security/requireSecureAdminMutation';
 import { logSystemEvent } from '@/lib/utils/logger';
+import { createNotification } from '@/lib/notifications';
 
 type AssignmentBody = {
   userId?: string;
@@ -107,6 +108,17 @@ export async function POST(request: Request) {
         endpoint: '/api/admin/assignments',
         actorAdminId: session.user._id.toString(),
       },
+    });
+
+    // Notify Trainee
+    await createNotification(db, {
+      userId,
+      role: 'trainee',
+      type: 'course_assigned',
+      title: 'New Course Assigned',
+      desc: `Admin has assigned you a new course: ${course.title}`,
+      link: `/trainee/training/${courseId}`,
+      metadata: { courseId }
     });
 
     await logSystemEvent(

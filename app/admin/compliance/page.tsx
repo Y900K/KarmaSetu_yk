@@ -44,12 +44,11 @@ function ComplianceContent() {
 
   const overdueList = useMemo<OverdueRow[]>(() => {
     const raw = Array.isArray(adminStats?.overdueList) ? adminStats.overdueList : [];
-    return raw.filter(
-      (item): item is OverdueRow =>
-        typeof item?.name === 'string' &&
-        typeof item?.dept === 'string' &&
-        typeof item?.course === 'string' &&
-        typeof item?.daysOverdue === 'number'
+    return raw.filter((item): item is OverdueRow => 
+      typeof item?.name === 'string' && 
+      typeof item?.dept === 'string' && 
+      typeof item?.course === 'string' && 
+      typeof item?.daysOverdue === 'number'
     );
   }, [adminStats?.overdueList]);
 
@@ -75,9 +74,9 @@ function ComplianceContent() {
 
   const interventionBuckets = useMemo(() => {
     return {
-      critical: overdueList.filter((row) => row.daysOverdue > 14),
-      high: overdueList.filter((row) => row.daysOverdue > 7 && row.daysOverdue <= 14),
-      medium: overdueList.filter((row) => row.daysOverdue <= 7),
+      critical: overdueList.filter((row: OverdueRow) => row.daysOverdue > 14),
+      high: overdueList.filter((row: OverdueRow) => row.daysOverdue > 7 && row.daysOverdue <= 14),
+      medium: overdueList.filter((row: OverdueRow) => row.daysOverdue <= 7),
     };
   }, [overdueList]);
 

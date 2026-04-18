@@ -17,6 +17,7 @@ import {
   resolveModulesCount,
   toDateOnly,
   validateQuizQuestions,
+  CourseQuizQuestion,
 } from '@/lib/courseUtils';
 import { importThumbnailAsset } from '@/lib/server/courseThumbnail';
 
@@ -106,7 +107,7 @@ export async function GET(request: Request) {
     const { db } = admin;
 
     const [courses, enrollmentStats] = await Promise.all([
-      db.collection(COLLECTIONS.courses).find({ isDeleted: { $ne: true } }).sort({ createdAt: -1 }).toArray(),
+      db.collection(COLLECTIONS.courses).find({ isDeleted: { $ne: true }, isLatest: { $ne: false } }).sort({ createdAt: -1 }).toArray(),
       db
         .collection(COLLECTIONS.enrollments)
         .aggregate<{ _id: string; enrolled: number; completionRate: number }>([
@@ -227,7 +228,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, message: 'Course title is required.' }, { status: 400 });
     }
 
-    let quizToSave: { questions: Array<{ text: string; options: string[]; correct: number }> } = { questions: [] };
+    let quizToSave: { questions: CourseQuizQuestion[] } = { questions: [] };
     if (body.quiz && Array.isArray(body.quiz.questions)) {
       const validation = validateQuizQuestions(body.quiz.questions);
       if (!validation.valid) {
@@ -289,6 +290,7 @@ export async function POST(request: Request) {
       quiz: quizToSave,
       quizTimeLimit: typeof body.quizTimeLimit === 'number' ? body.quizTimeLimit : 15,
       version: 1,
+      isLatest: true,
       createdBy: 'admin',
       createdAt: now,
       updatedAt: now,

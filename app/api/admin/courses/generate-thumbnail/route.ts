@@ -16,6 +16,10 @@ const INDUSTRIAL_MAPPING: Record<string, string> = {
   boiler: '1581092918056-0c4c3acd3789',
   loto: '1517048676732-d65bc937f952',
   maintenance: '1517048676732-d65bc937f952',
+  construction: '1541888941295-da42429470ab',
+  welding: '1504328345606-183a71b0712b',
+  logistics: '1586528116311-ad8dd3c8310d',
+  manufacturing: '1581091226825-a6a2a5aee158',
 };
 
 const POLLINATIONS_TIMEOUT_MS = 30000;
@@ -26,7 +30,7 @@ const POLLINATIONS_TIMEOUT_MS = 30000;
  */
 async function generateAIThumbnail(title: string, keywords: string[]): Promise<string | null> {
   const prompt = encodeURIComponent(
-    `professional industrial training course thumbnail, ${title}, ${keywords.join(', ')}, modern clean design, dark blue and teal color scheme, high quality, photorealistic`
+    `professional high-quality industrial training course thumbnail for "${title}", ${keywords.join(', ')}, industrial setting, safety gear, manufacturing environment, cinematic lighting, corporate blue and orange highlights, 4k resolution, extremely detailed, stable diffusion style`
   );
 
   for (let attempt = 0; attempt < 2; attempt++) {

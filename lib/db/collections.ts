@@ -80,6 +80,7 @@ export interface CourseDoc {
   createdAt: Date;
   updatedAt: Date;
   externalId?: string;
+  isLatest?: boolean;
 }
 
 export interface EnrollmentDoc {

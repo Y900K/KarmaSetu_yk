@@ -442,7 +442,11 @@ export default function CoursePlayer({ courseId }: { courseId: string }) {
   };
 
   const handleStartQuiz = () => {
-    setCurrentView('quiz');
+    if (course.isCompleted && course.quiz.passed) {
+      setCurrentView('quiz-results');
+    } else {
+      setCurrentView('quiz');
+    }
     setSidebarOpenMobile(false);
   };
 

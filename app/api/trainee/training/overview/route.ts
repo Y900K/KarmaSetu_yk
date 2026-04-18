@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { ObjectId } from 'mongodb';
 import { COLLECTIONS } from '@/lib/db/collections';
 import { dedupeEnrollmentsByCourse, getEnrollmentStudyTimeMs } from '@/lib/enrollmentMetrics';
 import { requireTrainee } from '@/lib/auth/requireTrainee';
@@ -77,21 +78,49 @@ export async function GET(request: Request) {
 
     const userId = session.user._id.toString();
 
-    // Fetch enrollments and courses separately to handle mixed ID formats
+    // 1. Fetch exactly the user's enrollments
     const rawEnrollments = await db
       .collection(COLLECTIONS.enrollments)
       .find({ userId })
+      .project({ userId: 1, courseId: 1, progressPct: 1, completedModuleIds: 1, status: 1, studyTimeMs: 1, updatedAt: 1, assignedAt: 1 })
       .toArray();
+    
+    if (rawEnrollments.length === 0) {
+      return NextResponse.json({ ok: true, courses: [], certificateCount: 0, totalEnrollmentCount: 0, totalCompletedCount: 0, totalStudyTimeMs: 0 });
+    }
+
     const enrollments = dedupeEnrollmentsByCourse(rawEnrollments as DbEnrollment[]);
+    
+    // 2. Identify unique course IDs and fetch only those
+    const courseIds = new Set<string>();
+    for (const enrollment of enrollments) {
+      const cid = typeof enrollment.courseId === 'string' 
+        ? enrollment.courseId 
+        : enrollment.courseId && typeof enrollment.courseId.toString === 'function' 
+          ? enrollment.courseId.toString() 
+          : '';
+      if (cid && ObjectId.isValid(cid)) courseIds.add(cid);
+    }
 
-    const allCourses = await db
+    const relevantCourses = await db
       .collection(COLLECTIONS.courses)
-      .find({}) // Fetch all courses to ensure historical enrollments have associated metadata
+      .find({ 
+        $or: [
+          { _id: { $in: Array.from(courseIds).map(id => new ObjectId(id)) } },
+          { code: { $in: Array.from(courseIds) } },
+          { slug: { $in: Array.from(courseIds) } }
+        ]
+      })
+      .project({
+        title: 1, category: 1, level: 1, deadline: 1, icon: 1, thumbnail: 1, thumbnailMeta: 1, theme: 1,
+        videoUrl: 1, pdfUrl: 1, modules: 1, videoUrls: 1, pdfUrls: 1, quiz: 1, passingScore: 1,
+        isDeleted: 1, isPublished: 1
+      })
       .toArray();
 
-    // Build a lookup map supporting both ObjectId and string-based courseIds
+    // Build a lookup map
     const courseById = new Map<string, DbCourse>();
-    for (const course of allCourses) {
+    for (const course of relevantCourses) {
       const normalizedCourse = course as DbCourse;
       courseById.set(normalizedCourse._id.toString(), normalizedCourse);
       if (typeof course.slug === 'string' && course.slug.trim().length > 0) {
@@ -114,10 +143,15 @@ export async function GET(request: Request) {
       if (course) {
         // If a course is deleted or unpublished, hide it completely 
         // UNLESS the trainee has already completed it (so they keep their history/certs)
-        const isHidden = course.isDeleted === true || course.isPublished === false;
-        if (isHidden && enrollment.status !== 'completed') {
+        const isDeleted = course.isDeleted === true;
+        const isUnpublished = course.isPublished === false;
+        
+        if (isDeleted) continue;
+
+        if (isUnpublished && enrollment.status === 'assigned') {
           continue;
         }
+        
         enrollmentsWithCourses.push({ enrollment: enrollment as DbEnrollment, course });
       }
     }

@@ -16,14 +16,37 @@ import { Users, GraduationCap, Award, ShieldCheck } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 
 function DashboardContent() {
-  const { adminStats, isLoading } = useGlobalStats();
+  const { adminStats, isLoading, timeframe, setTimeframe } = useGlobalStats();
   const { t } = useLanguage();
+
+  const timeframeOptions = [
+    { label: 'Last 7 Days', value: '7d' },
+    { label: 'Last 30 Days', value: '30d' },
+    { label: 'All Time', value: 'all' }
+  ];
 
   return (
     <>
       <PageHeader
         title={t('admin.dashboard.title')}
         sub={t('admin.dashboard.subtitle')}
+        action={
+          <div className="flex items-center gap-2 bg-slate-900/50 backdrop-blur-xl border border-slate-700/50 p-1 rounded-xl shadow-lg">
+            {timeframeOptions.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setTimeframe(opt.value)}
+                className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${
+                  timeframe === opt.value
+                    ? 'bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-lg shadow-blue-500/20'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        }
       />
 
       {/* KPI Cards */}
@@ -48,7 +71,7 @@ function DashboardContent() {
           href="/admin/compliance"
           sub={parseInt(adminStats?.compliance ?? '0') < 80 ? t('admin.kpi.needs_attention') : t('admin.kpi.good_standing')}
           subColor="text-amber-400"
-          delay={200}
+          delay={0}
         />
         <KPICard
           label={t('admin.kpi.active_courses')}
@@ -58,7 +81,7 @@ function DashboardContent() {
           valueColor="text-blue-400"
           href="/admin/courses"
           sub={`${adminStats?.totalCourses ?? 0} ${t('admin.kpi.total_courses')}`}
-          delay={400}
+          delay={0}
         />
         <KPICard
           label={t('admin.kpi.valid_certificates')}
@@ -69,7 +92,7 @@ function DashboardContent() {
           href="/admin/certificates"
           sub={t('admin.kpi.verified_registry')}
           subColor="text-emerald-400"
-          delay={600}
+          delay={0}
         />
       </div>
 

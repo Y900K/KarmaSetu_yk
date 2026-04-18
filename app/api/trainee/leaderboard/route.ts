@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { COLLECTIONS } from '@/lib/db/collections';
 import { requireTrainee } from '@/lib/auth/requireTrainee';
+import { normalizeDepartment } from '@/lib/utils/normalization';
 
 type LeaderboardRow = {
   rank: number;
@@ -46,7 +47,8 @@ export async function GET(request: Request) {
 
     const { db, session } = trainee;
     const url = new URL(request.url);
-    const requestedDepartment = url.searchParams.get('department')?.trim() || 'All Departments';
+    const rawDeptParam = url.searchParams.get('department')?.trim();
+    const requestedDepartment = rawDeptParam ? normalizeDepartment(rawDeptParam) : 'All Departments';
     const requestedTimeframe = url.searchParams.get('timeframe')?.trim() || 'all';
     const since =
       requestedTimeframe === 'week'
@@ -223,7 +225,7 @@ export async function GET(request: Request) {
         return {
           id,
           name: typeof user.fullName === 'string' ? user.fullName : 'Trainee User',
-          dept: typeof user.department === 'string' ? user.department : 'General',
+          dept: normalizeDepartment(typeof user.department === 'string' ? user.department : 'General'),
           pts: points,
           avgProgress: avgProgressRaw,
           completedCount,

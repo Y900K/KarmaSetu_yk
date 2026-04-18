@@ -137,11 +137,11 @@ export default function QuizResults({ course, score, passed, certNo, isFirstAtte
                 View Certificate
               </button>
               <button 
-                onClick={() => window.location.href = '/trainee/training'} 
+                onClick={() => course.isCompleted ? onRetake() : (window.location.href = '/trainee/training')} 
                 className="px-6 py-4 bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-black uppercase tracking-widest text-[11px] rounded-2xl transition-all shadow-xl shadow-emerald-500/20 hover:-translate-y-0.5 flex items-center justify-center gap-2"
               >
                 <GraduationCap className="w-4 h-4" />
-                Finish & Dashboard
+                {course.isCompleted ? 'Practice Retake' : 'Finish & Dashboard'}
               </button>
             </div>
           ) : (

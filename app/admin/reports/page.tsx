@@ -141,15 +141,16 @@ export default function ReportsPage() {
         let aVal = a[sortConfig.key];
         let bVal = b[sortConfig.key];
         
-        if (aVal === undefined || aVal === null) aVal = '';
-        if (bVal === undefined || bVal === null) bVal = '';
+        // Better handling for numeric sorts with nulls
+        if (typeof aVal === 'undefined' || aVal === null) aVal = typeof bVal === 'number' ? -1 : '';
+        if (typeof bVal === 'undefined' || bVal === null) bVal = typeof aVal === 'number' ? -1 : '';
 
         if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
         if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
         return 0;
       });
     }
-    return sortableItems.slice(0, 10);
+    return sortableItems.slice(0, 50);
   }, [analyticsRows, sortConfig]);
 
   const requestSort = (key: keyof AuditEntry) => {
@@ -443,75 +444,7 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      {/* Audit Log Table */}
-      <div className="bg-[#0f172a]/40 backdrop-blur-xl border border-white/5 rounded-2xl p-6 mb-8 shadow-2xl relative overflow-hidden group transition-all duration-500 hover:border-white/10">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-             <div className="w-1 h-4 bg-cyan-500 rounded-full shadow-[0_0_8px_rgba(6,182,212,0.5)]"></div>
-             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Live Training Audit Feed</h3>
-          </div>
-          <div className="text-[9px] font-black text-slate-500 bg-white/5 px-3 py-1 rounded-full border border-white/5 uppercase tracking-widest">
-            {analyticsRows.length} RECORDS INDEXED
-          </div>
-        </div>
-
-        <div className="overflow-x-auto custom-scrollbar">
-          <table className="w-full min-w-[850px] border-separate border-spacing-y-2">
-            <thead>
-              <tr>
-                {TABLE_HEADERS.map((col) => (
-                  <th key={col.key} onClick={() => requestSort(col.key)} className="px-4 py-2 text-left text-[9px] font-black uppercase tracking-[0.15em] text-slate-500 cursor-pointer hover:text-cyan-400 transition-colors select-none group">
-                    <div className="flex items-center gap-1.5">
-                      {col.label}
-                      <ChevronsUpDown className={`h-3 w-3 transition-opacity ${sortConfig?.key === col.key ? 'opacity-100 text-cyan-400' : 'opacity-0 group-hover:opacity-100'}`} />
-                    </div>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {isAuditLoading && (
-                <>
-                  {[...Array(5)].map((_, i) => (
-                    <tr key={`skel-${i}`} className="animate-pulse">
-                      {TABLE_HEADERS.map((_, idx) => (
-                        <td key={idx} className="px-4 py-4 bg-white/5 first:rounded-l-xl last:rounded-r-xl border-y border-white/5"><div className="h-3 w-full bg-white/5 rounded" /></td>
-                      ))}
-                    </tr>
-                  ))}
-                </>
-              )}
-              {!isAuditLoading &&
-                sortedAndFilteredAudits.map((row) => (
-                  <tr key={row.id} className="group hover:translate-x-1 transition-all">
-                    <td className="px-4 py-4 bg-white/[0.02] border-y border-l border-white/5 rounded-l-xl text-[10px] font-bold text-slate-500 tracking-tighter">{formatDate(row.createdAt)}</td>
-                    <td className="px-4 py-4 bg-white/[0.02] border-y border-white/5 text-xs">
-                      <span className="px-2 py-1 rounded-lg bg-cyan-500/10 text-cyan-400 font-bold uppercase text-[9px] tracking-wider border border-cyan-500/20">{row.action}</span>
-                    </td>
-                    <td className="px-4 py-4 bg-white/[0.02] border-y border-white/5 text-[10px] font-black text-slate-500 uppercase tracking-widest">{row.source}</td>
-                    <td className="px-4 py-4 bg-white/[0.02] border-y border-white/5 text-sm font-bold text-white/90">{row.userName}</td>
-                    <td className="px-4 py-4 bg-white/[0.02] border-y border-white/5 text-sm font-medium text-slate-300">{row.courseTitle}</td>
-                    <td className="px-4 py-4 bg-white/[0.02] border-y border-white/5">
-                      {typeof row.progressPct === 'number' && (
-                        <div className="flex items-center gap-2">
-                           <div className="flex-1 w-12 h-1 bg-white/5 rounded-full overflow-hidden">
-                            <div className={`h-full bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.5)] ${progressWidthClass(row.progressPct)}`}></div>
-                           </div>
-                           <span className="text-[10px] font-black text-white">{row.progressPct}%</span>
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-4 py-4 bg-white/[0.02] border-y border-r border-white/5 rounded-r-xl text-xs font-black text-emerald-400">
-                      {typeof row.score === 'number' ? `${row.score}%` : <span className="text-slate-600">-</span>}
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Experimental Advanced Charts Section 2 */}
+      {/* Visual Analytics Layer (Shifted Above Table) */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
          {/* Weekly Comparison Line Chart */}
          <div className="bg-[#0f172a]/40 backdrop-blur-xl border border-white/5 rounded-2xl p-6 flex flex-col h-[350px] shadow-2xl transition-all duration-500 hover:border-indigo-500/20 group">
@@ -585,6 +518,74 @@ export default function ReportsPage() {
                 </BarChart>
              </ResponsiveContainer>
           </div>
+        </div>
+      </div>
+
+      {/* Audit Log Table (Shifted Below Charts) */}
+      <div className="bg-[#0f172a]/40 backdrop-blur-xl border border-white/5 rounded-2xl p-6 mb-8 shadow-2xl relative overflow-hidden group transition-all duration-500 hover:border-white/10">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+             <div className="w-1 h-4 bg-cyan-500 rounded-full shadow-[0_0_8px_rgba(6,182,212,0.5)]"></div>
+             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Detailed Training Traceability</h3>
+          </div>
+          <div className="text-[9px] font-black text-slate-500 bg-white/5 px-3 py-1 rounded-full border border-white/5 uppercase tracking-widest">
+            {analyticsRows.length} RECORDS INDEXED
+          </div>
+        </div>
+
+        <div className="overflow-x-auto custom-scrollbar">
+          <table className="w-full min-w-[850px] border-separate border-spacing-y-2">
+            <thead>
+              <tr>
+                {TABLE_HEADERS.map((col) => (
+                  <th key={col.key} onClick={() => requestSort(col.key)} className="px-4 py-2 text-left text-[9px] font-black uppercase tracking-[0.15em] text-slate-500 cursor-pointer hover:text-cyan-400 transition-colors select-none group">
+                    <div className="flex items-center gap-1.5">
+                      {col.label}
+                      <ChevronsUpDown className={`h-3 w-3 transition-opacity ${sortConfig?.key === col.key ? 'opacity-100 text-cyan-400' : 'opacity-0 group-hover:opacity-100'}`} />
+                    </div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {isAuditLoading && (
+                <>
+                  {[...Array(5)].map((_, i) => (
+                    <tr key={`skel-${i}`} className="animate-pulse">
+                      {TABLE_HEADERS.map((col, idx) => (
+                        <td key={idx} className="px-4 py-4 bg-white/5 first:rounded-l-xl last:rounded-r-xl border-y border-white/5"><div className="h-3 w-full bg-white/5 rounded" /></td>
+                      ))}
+                    </tr>
+                  ))}
+                </>
+              )}
+              {!isAuditLoading &&
+                sortedAndFilteredAudits.map((row) => (
+                  <tr key={row.id} className="group hover:translate-x-1 transition-all">
+                    <td className="px-4 py-4 bg-white/[0.02] border-y border-l border-white/5 rounded-l-xl text-[10px] font-bold text-slate-500 tracking-tighter">{formatDate(row.createdAt)}</td>
+                    <td className="px-4 py-4 bg-white/[0.02] border-y border-white/5 text-xs">
+                      <span className="px-2 py-1 rounded-lg bg-cyan-500/10 text-cyan-400 font-bold uppercase text-[9px] tracking-wider border border-cyan-500/20">{row.action}</span>
+                    </td>
+                    <td className="px-4 py-4 bg-white/[0.02] border-y border-white/5 text-[10px] font-black text-slate-500 uppercase tracking-widest">{row.source}</td>
+                    <td className="px-4 py-4 bg-white/[0.02] border-y border-white/5 text-sm font-bold text-white/90">{row.userName}</td>
+                    <td className="px-4 py-4 bg-white/[0.02] border-y border-white/5 text-sm font-medium text-slate-300">{row.courseTitle}</td>
+                    <td className="px-4 py-4 bg-white/[0.02] border-y border-white/5">
+                      {typeof row.progressPct === 'number' && (
+                        <div className="flex items-center gap-2">
+                           <div className="flex-1 w-12 h-1 bg-white/5 rounded-full overflow-hidden">
+                            <div className={`h-full bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.5)] ${progressWidthClass(row.progressPct)}`}></div>
+                           </div>
+                           <span className="text-[10px] font-black text-white">{row.progressPct}%</span>
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-4 bg-white/[0.02] border-y border-r border-white/5 rounded-r-xl text-xs font-black text-emerald-400">
+                      {typeof row.score === 'number' ? `${row.score}%` : <span className="text-slate-600">-</span>}
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
         </div>
       </div>
 

@@ -5,6 +5,7 @@ import { getPasswordPolicyError } from '@/lib/auth/passwordPolicy';
 import { requireAdmin } from '@/lib/auth/requireAdmin';
 import { requireSecureAdminMutation } from '@/lib/security/requireSecureAdminMutation';
 import { logSystemEvent } from '@/lib/utils/logger';
+import { normalizeDepartment } from '@/lib/utils/normalization';
 
 type CreateUserBody = {
   name?: string;
@@ -137,8 +138,6 @@ export async function GET(request: Request) {
 
       progressAndOverdueMap.set(uid, current);
     }
-    
-    // ...
 
     const rows: UserRow[] = users.map((user) => {
       const id = user._id.toString();
@@ -155,7 +154,7 @@ export async function GET(request: Request) {
         id,
         name: typeof user.fullName === 'string' ? user.fullName : 'User',
         email: typeof user.email === 'string' ? user.email : '-',
-        department: typeof user.department === 'string' ? user.department : 'General',
+        department: normalizeDepartment(user.department),
         role: roleToDisplay(user.role),
         progress,
         status: computeStatus(user.isActive !== false, isOverdue),
@@ -252,7 +251,7 @@ export async function POST(request: Request) {
       phone,
       passwordHash: hashSecret(password),
       role,
-      department: body.dept?.trim() || 'General',
+      department: normalizeDepartment(body.dept),
       company: 'KarmaSetu',
       approvalStatus: 'approved',
       accessLevel: 'full',
