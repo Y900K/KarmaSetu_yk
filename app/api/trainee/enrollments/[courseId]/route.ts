@@ -1,4 +1,4 @@
-import { createHash } from 'crypto';
+import { createHash, randomInt } from 'crypto';
 import { NextResponse } from 'next/server';
 import { ObjectId } from 'mongodb';
 import { getMongoDb } from '@/lib/mongodb';
@@ -126,7 +126,7 @@ function buildEnrollmentFilter(userId: string, resolvedCourseId: string, courseC
 
 function generateCertificateNumber(): string {
   const year = new Date().getFullYear();
-  const suffix = String(Math.floor(Math.random() * 1_000_000)).padStart(6, '0');
+  const suffix = String(randomInt(0, 1000000)).padStart(6, '0');
   return `KS-CERT-${year}-${suffix}`;
 }
 
