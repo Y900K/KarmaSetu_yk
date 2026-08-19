@@ -3,7 +3,8 @@ import { checkCircuitBreaker } from '@/lib/utils/circuitBreaker';
 import { NextResponse } from 'next/server';
 import { cleanResponse } from '@/utils/cleanResponse';
 import { buildBuddyFallbackResponse } from '@/utils/buddyFallback';
-import { requireAuthenticated } from '@/lib/auth/requireAuthenticated';
+import { getMongoDb } from '@/lib/mongodb';
+import { resolveSessionUser } from '@/lib/auth/session';
 import { checkRequestRateLimit } from '@/lib/security/requestRateLimit';
 import { callAI, stripReasoningBlocks } from '@/lib/server/aiGateway';
 
@@ -141,16 +142,21 @@ export async function POST(request: Request) {
   const correlationId = request.headers.get('x-correlation-id')?.trim() || randomUUID();
 
   try {
-    const auth = await requireAuthenticated(request);
-    if (!auth.ok) {
-      return withCorrelation(auth.response, correlationId);
+    const ip = (request.headers.get('x-forwarded-for') || 'unknown').split(',')[0].trim() || 'unknown';
+    let authUserId: string | null = null;
+    try {
+      const db = await getMongoDb();
+      const session = await resolveSessionUser(db, request);
+      if (session?.user?._id) {
+        authUserId = session.user._id.toString();
+      }
+    } catch {
+      // Guest user or DB initializing
     }
 
-    const userId = auth.session.user._id.toString();
-    const ip = (request.headers.get('x-forwarded-for') || 'unknown').split(',')[0].trim() || 'unknown';
-
-    const limiter = checkRequestRateLimit(`sarvam_chat:${userId}:${ip}`, {
-      maxAttempts: 30,
+    const rateLimitKey = authUserId ? `sarvam_chat:user:${authUserId}` : `sarvam_chat:anon:${ip}`;
+    const limiter = checkRequestRateLimit(rateLimitKey, {
+      maxAttempts: authUserId ? 40 : 20,
       windowMs: 60_000,
       blockMs: 5 * 60_000,
     });

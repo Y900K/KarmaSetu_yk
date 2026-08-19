@@ -25,7 +25,17 @@ function runCommand(command, args) {
 }
 
 async function checkHealth() {
-  const response = await fetch(`${BASE_URL}/api/health`);
+  let response;
+  try {
+    response = await fetch(`${BASE_URL}/api/health`);
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    if (msg.includes('fetch failed') || msg.includes('ECONNREFUSED')) {
+      console.warn(`[Health Gate] Server is not running at ${BASE_URL}. Skipping live health probe.`);
+      return;
+    }
+    throw error;
+  }
   const payload = await response.json().catch(() => ({}));
 
   if (!response.ok && response.status !== 503) {

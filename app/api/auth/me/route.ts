@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getMongoDb } from '@/lib/mongodb';
-import { clearSessionCookie, resolveSessionUser } from '@/lib/auth/session';
+import { resolveSessionUser } from '@/lib/auth/session';
 import { COLLECTIONS } from '@/lib/db/collections';
 
 export async function GET(request: Request) {
@@ -9,9 +9,7 @@ export async function GET(request: Request) {
     const sessionData = await resolveSessionUser(db, request);
 
     if (!sessionData) {
-      const response = NextResponse.json({ ok: false, message: 'Not authenticated.' }, { status: 401 });
-      clearSessionCookie(response);
-      return response;
+      return NextResponse.json({ ok: false, message: 'Not authenticated.' }, { status: 401 });
     }
 
     const { user } = sessionData;

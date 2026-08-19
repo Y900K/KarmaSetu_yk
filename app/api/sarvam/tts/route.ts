@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import { NextResponse } from 'next/server';
 import { recordOpsMetric } from '@/lib/server/opsTelemetry';
-import { requireAuthenticated } from '@/lib/auth/requireAuthenticated';
+import { checkRequestRateLimit } from '@/lib/security/requestRateLimit';
 
 const BASE_URL = 'https://api.sarvam.ai';
 const TTS_TIMEOUT_MS = 18000;
@@ -19,9 +19,15 @@ export async function POST(request: Request) {
   const correlationId = request.headers.get('x-correlation-id')?.trim() || randomUUID();
 
   try {
-    const auth = await requireAuthenticated(request);
-    if (!auth.ok) {
-      return withCorrelation(auth.response, correlationId);
+    const ip = (request.headers.get('x-forwarded-for') || 'unknown').split(',')[0].trim() || 'unknown';
+    const limiter = checkRequestRateLimit(`sarvam_tts:${ip}`, {
+      maxAttempts: 25,
+      windowMs: 60_000,
+      blockMs: 5 * 60_000,
+    });
+
+    if (limiter.blocked) {
+      return withCorrelation(safeError('Too many speech synthesis requests. Please wait a moment.', 429), correlationId);
     }
 
     const body = await request.json();

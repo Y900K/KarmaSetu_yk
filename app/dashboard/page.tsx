@@ -11,6 +11,8 @@ export default async function DashboardRootPage() {
     redirect('/login');
   }
 
+  let targetRoute = '/login';
+
   try {
     const db = await getMongoDb();
     const fakeReq = new Request('http://localhost', {
@@ -19,14 +21,13 @@ export default async function DashboardRootPage() {
     const session = await resolveSessionUser(db, fakeReq);
     
     if (session?.user?.role === 'admin') {
-      redirect('/admin/dashboard');
-    }
-    if (session?.user) {
-      redirect('/trainee/dashboard');
+      targetRoute = '/admin/dashboard';
+    } else if (session?.user) {
+      targetRoute = '/trainee/dashboard';
     }
   } catch {
-    // If DB check fails or no session, fallback to login
+    targetRoute = '/login';
   }
 
-  redirect('/login');
+  redirect(targetRoute);
 }

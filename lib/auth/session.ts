@@ -123,6 +123,10 @@ export async function resolveSessionUser(db: Db, request: Request) {
   }
 
   if (!user) {
+    user = await users.findOne({ _id: userId as unknown as ObjectId });
+  }
+
+  if (!user) {
     return null;
   }
 

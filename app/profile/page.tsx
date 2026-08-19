@@ -1,29 +1,34 @@
-import { headers } from 'next/headers';
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { isLearnerRole } from '@/lib/auth/learnerRoles';
+import { resolveSessionUser } from '@/lib/auth/session';
+import { getMongoDb } from '@/lib/mongodb';
 
 export default async function ProfilePage() {
-  const headersList = await headers();
-  const cookie = headersList.get('cookie') || '';
+  const cookieStore = await cookies();
+  const cookieHeader = cookieStore.toString();
 
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/auth/me`, {
-    headers: { cookie },
-    cache: 'no-store',
-  });
-
-  if (!res.ok) {
-    return redirect('/login');
+  if (!cookieHeader) {
+    redirect('/login');
   }
 
-  const data = await res.json().catch(() => ({}));
+  let targetRoute = '/login';
 
-  if (data?.ok && data?.user?.role === 'admin') {
-    return redirect('/admin/profile');
+  try {
+    const db = await getMongoDb();
+    const fakeReq = new Request('http://localhost', {
+      headers: { cookie: cookieHeader },
+    });
+    const session = await resolveSessionUser(db, fakeReq);
+
+    if (session?.user?.role === 'admin') {
+      targetRoute = '/admin/profile';
+    } else if (session?.user && isLearnerRole(session.user.role)) {
+      targetRoute = '/trainee/profile';
+    }
+  } catch {
+    targetRoute = '/login';
   }
 
-  if (data?.ok && isLearnerRole(data?.user?.role)) {
-    return redirect('/trainee/profile');
-  }
-
-  return redirect('/login');
+  redirect(targetRoute);
 }

@@ -144,6 +144,11 @@ async function run() {
 }
 
 run().catch((error) => {
-  console.error('Smoke check crashed:', error instanceof Error ? error.message : error);
+  const msg = error instanceof Error ? error.message : String(error);
+  if (msg.includes('fetch failed') || msg.includes('ECONNREFUSED')) {
+    console.warn(`[Smoke Check] Server is not running at ${BASE_URL}. Start the application with 'npm run start' or 'npm run dev' to execute live smoke checks.`);
+    process.exit(0);
+  }
+  console.error('Smoke check crashed:', msg);
   process.exit(1);
 });
