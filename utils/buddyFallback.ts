@@ -135,6 +135,41 @@ const SAFETY_KNOWLEDGE_BASE: SafetyKnowledgeEntry[] = [
     en: '🏋️ Industrial Ergonomics & Manual Handling:\n1. Power Zone Lifting: Keep heavy loads close to your body between mid-thigh and chest height.\n2. Proper Posture: Bend your knees and hips—NOT your lower back. Keep feet shoulder-width apart.\n3. Weight Limits: Maximum manual lift for a single person is 20-25 kg; use mechanical hoists or two-person lift for heavier loads.\n4. Repetitive Strain: Take micro-breaks, stretch, and adjust workstation heights to neutral elbow levels.',
     hi: '🏋️ Workplace Ergonomics (कार्यस्थल एर्गोनॉमिक्स):\n1. वजन उठाने का सही तरीका: घुटने मोड़कर बैठें और पैरों की ताकत से उठें, कमर को कभी न झुकाएं।\n2. Load को पास रखें: सामान को शरीर के करीब रखें, दूर रखकर उठाने से रीढ़ की हड्डी पर 10 गुना दबाव पड़ता है।\n3. वजन सीमा: एक व्यक्ति अधिकतम 20-25 kg ही उठाए; भारी सामान के लिए Hoist/Crane या सहकर्मी की मदद लें।\n4. Micro-Breaks: लगातार एक ही मुद्रा में काम करने के बीच 30 सेकंड का स्ट्रेचिंग ब्रेक लें।',
   },
+  {
+    triggers: ['apprentice', 'trainee', 'apprenticeship', 'naps', 'intern', 'प्रशिक्षु', 'apprentice koun', 'who is apprentice'],
+    en: '👷 Industrial Apprentice & Trainee Guide:\nAn Apprentice (प्रशिक्षु) is a technical trainee undergoing structured On-the-Job Training (OJT) under experienced plant engineers per the Apprenticeship Act / NAPS.\n\nKey Responsibilities:\n1. Safety Compliance: Strictly wear mandatory PPE (Helmet, Safety Boots, Goggles) and adhere to plant safety rules.\n2. SOP Adherence: Learn and follow validated Standard Operating Procedures for chemical handling, mixing, and valve operations.\n3. Zero Unsupervised Operations: Never operate machinery, enter confined spaces, or open chemical lines without certified mentor authorization.\n4. Hazard & Near-Miss Reporting: Immediately report any unsafe acts, chemical leaks, or faulty gauges to your shift supervisor.',
+    hi: '👷 Industrial Apprentice (प्रशिक्षु) की जानकारी व जिम्मेदारियां:\nApprentice (प्रशिक्षु) वह कामगार होता है जो Apprenticeship Act / NAPS के तहत Chemical Plant में अनुभवी इंजीनियर्स व सुपरवाइजर्स की देखरेख में व्यावहारिक कार्य प्रशिक्षण (On-the-Job Training) प्राप्त करता है।\n\nमुख्य जिम्मेदारियां:\n1. 100% सुरक्षा नियम: अनिवार्य PPE (Safety Shoes, Helmet, Goggles) पहनना और प्लांट के सेफ्टी प्रोटोकॉल का पालन करना।\n2. SOP का पालन: केमिकल हैंडलिंग, मिक्सिंग व वाल्व ऑपरेशन के लिए निर्धारित Standard Operating Procedures का अध्ययन व पालन करना।\n3. बिना अनुमति काम न करना: सुपरवाइजर की अनुमति व देखरेख के बिना किसी भी भारी मशीन या केमिकल वॉल्व को न छुएं।\n4. Near Miss रिपोर्टिंग: किसी भी खतरे, केमिकल रिसाव या खराब उपकरण की सूचना तुरंत शिफ्ट सुपरवाइजर को दें।',
+  },
+  {
+    triggers: ['future trend', 'chemical plant future', 'future', 'trend', 'industry 4.0', 'automation', 'green chemistry', 'ai in chemical', 'भविष्य'],
+    en: '🚀 Future Trends in Chemical & Process Industries:\n1. Industry 4.0 & Digital Twins: Real-time 3D simulation of reactors and pipelines using IoT sensors to predict equipment failure before it occurs.\n2. AI & Advanced Process Control (APC): Machine learning algorithms optimizing reaction yield, temperature control, and energy efficiency automatically.\n3. Green Chemistry & Circular Economy: Shifting to bio-based feedstocks, non-toxic solvents, and Zero Liquid Discharge (ZLD) effluent treatment.\n4. Robotics & Drones: Using ATEX-rated robotic crawlers for confined space and tank inspections to eliminate human exposure.\n5. Connected Worker Wearables: Smart helmets with heads-up displays, real-time gas exposure monitors, and biometric fatigue tracking.',
+    hi: '🚀 Chemical Plants में भविष्य के मुख्य रुझान (Future Trends):\n1. Industry 4.0 & Digital Twins: IoT सेंसर्स द्वारा प्लांट का डिजिटल मॉडल बनाकर खराबी आने से पहले ही प्रेडिक्टिव मेंटेनेंस करना।\n2. AI व Advanced Process Control: AI द्वारा केमिकल मिक्सिंग, तापमान और ऊर्जा खपत को ऑटोमैटिक ऑप्टिमाइज करना।\n3. Green Chemistry व Sustainability: पर्यावरण-अनुकूल सॉल्वैंट्स, बायो-पॉलीमर्स और Zero Liquid Discharge (ZLD) से प्रदूषण शून्य करना।\n4. Robotics व Drones: Confined space और ऊंचे टैंकों के निरीक्षण के लिए इंसानों की जगह रोबोट्स व ड्रोन्स का उपयोग।\n5. Smart Worker Wearables: कामगारों के लिए गैस डिटेक्टिंग स्मार्ट हेलमेट और AR-आधारित सुरक्षित मेंटेनेंस टूल्स।',
+  },
+  {
+    triggers: ['aur pucho', 'aur batao', 'kuch aur', 'next question', 'ask me', 'quiz me', 'aur puchho', 'aur poochho', 'another question', 'aur pucho na'],
+    en: '🎯 Ready for your next Safety Practice Question!\n\nQuestion:\n"What is the first step you should take when a chemical splash accidentally enters a worker\'s eyes?"\n\nA) Apply an ice pack\nB) Flush at the Emergency Eyewash Station for at least 15 minutes\nC) Rub the eye with sterile cotton\nD) Wait for medical staff without flushing\n\n👉 Reply with your answer (A, B, C, or D), or ask me about any industrial SOP!',
+    hi: '🎯 आपके लिए अगला सेफ्टी सवाल तैयार है!\n\nसवाल:\n"यदि किसी कामगार की आँख में गलती से एसिड या केमिकल छलक जाए, तो तुरंत क्या करना चाहिए?"\n\nA) आँख पर बर्फ लगाएं\nB) Emergency Eyewash Station पर कम से कम 15 मिनट आँखें खोलकर धोएं\nC) आँख को कपड़े से रगड़ें\nD) बिना धोए डॉक्टर का इंतज़ार करें\n\n👉 अपना जवाब (A, B, C, या D) लिखें, या मुझसे कोई भी प्लांट सेफ्टी टॉपिक पूछें!',
+  },
+  {
+    triggers: ['safety officer', 'supervisor', 'ehs role', 'role of safety officer', 'जिम्मेदारी'],
+    en: '🛡️ Safety Officer & Supervisor Responsibilities:\n1. Hazard Audits: Daily inspections of plant areas, equipment guards, and chemical storage.\n2. Work Permits: Reviewing and issuing Hot Work, Confined Space, and Height Work permits.\n3. Safety Training: Conducting Toolbox Talks (TBT) and training apprentices on SOPs.\n4. Incident Investigation: Root cause analysis (RCA) of accidents and near misses to prevent recurrence.\n5. Regulatory Compliance: Ensuring OSHA/Factory Act compliance and maintaining emergency response readiness.',
+    hi: '🛡️ Safety Officer व Supervisor की जिम्मेदारियां:\n1. सुरक्षा निरीक्षण: प्लांट एरिया, मशीन गार्डिंग और केमिकल स्टोरेज की दैनिक जांच।\n2. वर्क परमिट: Hot Work, Confined Space और Height Work परमिट की समीक्षा व जारी करना।\n3. सुरक्षा प्रशिक्षण: शिफ्ट से पहले Toolbox Talk (TBT) देना और कामगारों को SOPs सिखाना।\n4. दुर्घटना जांच: Near Miss और हादसों के मूल कारणों (RCA) की जांच कर दोबारा होने से रोकना।\n5. अनुपालन: Factory Act/EHS नियमों का पालन सुनिश्चित करना और Emergency readiness बनाए रखना।',
+  },
+  {
+    triggers: ['distillation', 'reactor', 'boiler', 'heat exchanger', 'pump', 'valve', 'scada', 'plc'],
+    en: '🏭 Plant Unit Operations & Equipment Safety:\n1. Reactors: Monitor jacket pressure, agitator speed, and temperature sensors to prevent thermal runaways.\n2. Distillation Columns: Maintain safe reflux ratios and verify pressure relief valve (PRV) calibration.\n3. Boilers: Test low-water cutoffs, blowdown valves, and burner interlocks daily.\n4. Pumps & Valves: Never throttle suction valves on centrifugal pumps; verify LOTO before opening process pipe flanges.\n5. SCADA/PLC: Respond immediately to high-high priority alarms; never disable interlock trips.',
+    hi: '🏭 Plant Equipment व Unit Operations सुरक्षा:\n1. Reactors: Runaway रिएक्शन रोकने के लिए तापमान, प्रेशर और Agitator की स्पीड पर नजर रखें।\n2. Distillation Columns: Reflux ratio संतुलित रखें और Pressure Relief Valve (PRV) की टेस्टिंग जांचें।\n3. Boilers: Water level interlock और Burner safety cutoff को नियमित चेक करें।\n4. Pumps & Valves: सेंट्रीफ्यूगल पंप का सक्शन वॉल्व कभी बंद न करें; मेंटेनेंस से पहले LOTO लगाएं।\n5. SCADA/PLC: हाई-प्रायोरिटी अलार्म को तुरंत अटेंड करें और सेफ्टी इंटरलॉक को कभी बाईपास न करें।',
+  },
+  {
+    triggers: ['permit', 'work permit', 'ptw', 'hot work', 'height work', 'tbt', 'toolbox talk', 'near miss'],
+    en: '📋 Permit-to-Work (PTW) & Safe System of Work:\n1. Hot Work Permit: Mandatory for welding, cutting, grinding in hazardous areas; gas test LEL < 1% required.\n2. Working at Height: Mandatory for work at 1.8m+ height; full body harness tied to certified anchor point.\n3. Confined Space Permit: Oxygen (19.5%-23.5%), toxic gas test, standby attendant required.\n4. Toolbox Talk (TBT): 5-10 minute safety briefing before shift on task hazards and PPE.\n5. Near-Miss Reporting: Report all near misses to fix root causes before injuries happen.',
+    hi: '📋 Permit-to-Work (PTW) और सुरक्षित कार्य प्रणाली:\n1. Hot Work Permit: वेल्डिंग, कटिंग, ग्राइंडिंग के लिए अनिवार्य; गैस टेस्ट में LEL < 1% होना चाहिए।\n2. Working at Height: 1.8 मीटर या अधिक ऊंचाई पर फुल बॉडी हार्नेस और लाइफलाइन अनिवार्य है।\n3. Confined Space Permit: 4-गैस डिटेक्शन टेस्ट, लगातार वेंटिलेशन और बाहर स्टैंडबाय अटेंडेंट अनिवार्य।\n4. Toolbox Talk (TBT): हर शिफ्ट से पहले 5-10 मिनट की सुरक्षा ब्रीफिंग जिसमें खतरों और PPE की चर्चा हो।\n5. Near Miss Reporting: हर बाल-बाल बची घटना की रिपोर्ट करें ताकि बड़ी दुर्घटना को पहले ही रोका जा सके।',
+  },
+  {
+    triggers: ['safety kya hai', 'suraksha kya hai', 'what is safety', 'safety definition', 'सुरक्षा क्या है'],
+    en: '🛡️ Industrial Safety Definition & Core Principles:\nIndustrial Safety is the systematic management of workplace hazards to prevent injury, occupational illness, equipment damage, and environmental harm.\n\n4 Core Safety Pillars:\n1. Engineering Controls: Machine guarding, ventilation (LEV), automatic shutdown interlocks.\n2. Administrative Controls: SOPs, Permit-to-Work (PTW), regular safety audits, and training.\n3. Safe Behavior: Wearing mandatory PPE, reporting near misses, and avoiding unsafe shortcuts.\n4. Emergency Preparedness: Clear evacuation routes, fire drills, and trained first-aid responders.',
+    hi: '🛡️ Industrial Safety (औद्योगिक सुरक्षा) क्या है:\nIndustrial Safety कार्यस्थल पर मौजूद खतरों का वह व्यवस्थित प्रबंधन है, जिसका उद्देश्य कामगारों को चोट, बीमारियों, मशीनरी नुकसान और पर्यावरणीय क्षति से बचाना है।\n\n4 मुख्य सुरक्षा स्तंभ:\n1. Engineering Controls: मशीनों पर सेफ्टी गार्ड, वेंटिलेशन (LEV) और ऑटोमैटिक इमरजेंसी ट्रिप।\n2. Administrative Controls: SOPs, वर्क परमिट (PTW), सेफ्टी ऑडिट और कामगारों का नियमित प्रशिक्षण।\n3. Safe Work Culture: सही PPE पहनना, शॉर्टकट न अपनाना और Near Miss रिपोर्ट करना।\n4. Emergency Preparedness: फायर ड्रिल, साफ इमरजेंसी निकास और फर्स्ट-एड की त्वरित उपलब्धता।',
+  },
 ];
 
 function isEmergencyPrompt(text: string): boolean {
@@ -142,23 +177,38 @@ function isEmergencyPrompt(text: string): boolean {
   return EMERGENCY_KEYWORDS.some((keyword) => normalized.includes(keyword));
 }
 
+function synthesizeSmartResponse(query: string, mode: BuddyMode): string {
+  const q = query.toLowerCase();
+
+  if (q.includes('hi') || q.includes('hello') || q.includes('namaste') || q.includes('hey') || q.includes('kaise ho')) {
+    return mode === 'hinglish'
+      ? 'नमस्ते! मैं Buddy AI हूँ, आपका Chemical Plant व Industrial Safety Assistant।\n\nआप मुझसे निम्न विषयों पर पूछ सकते हैं:\n• Safety Protocols (PPE, LOTO, Chemical Spill, Fire PASS, Confined Space)\n• Plant Procedures (Chemical Mixing SOP, Hazard Identification, Safety Inspection)\n• Apprentice / Trainee Guidance & Future Trends in Chemical Plants\n\nबताइए, आज मैं आपकी क्या मदद करूँ?'
+      : 'Hello! I am Buddy AI, your Chemical Plant and Industrial Safety Assistant.\n\nYou can ask me about:\n• Safety Protocols (PPE, LOTO, Chemical Spill, Fire PASS, Confined Space)\n• Plant Procedures (Chemical Mixing SOP, Hazard Identification, Safety Inspection)\n• Apprentice / Trainee Guidance & Future Trends in Process Manufacturing\n\nHow can I assist you today?';
+  }
+
+  // Answer general industrial / plant queries systematically
+  return mode === 'hinglish'
+    ? `🏭 Industrial Safety & Plant Guidance:\n\n1. Job Safety Assessment (JSA): किसी भी कार्य को शुरू करने से पहले उससे जुड़े संभावित खतरों का आकलन करें और कार्य परमिट (PTW) प्राप्त करें।\n2. Mandatory PPE: कार्य के अनुसार प्रमाणित सुरक्षा उपकरण (Safety Shoes, Helmet, Splash Goggles व Gloves) का उपयोग अनिवार्य है।\n3. Standard Operating Procedure (SOP): केमिकल प्लांट मैन्युअल और वरिष्ठ सुपरवाइजर द्वारा प्रमाणित सुरक्षित कार्यविधि का ही पालन करें।\n4. Emergency Preparedness: किसी भी असामान्य स्थिति में तुरंत Emergency Stop Switch का उपयोग करें और EHS Officer को सूचित करें।\n\n💡 आप मुझसे किसी विशिष्ट विषय (जैसे: PPE, LOTO, Chemical Spill, Inspection, Apprentice, या Future Trends) पर भी विस्तार से पूछ सकते हैं!`
+    : `🏭 Industrial Safety & Plant Guidance:\n\n1. Job Safety Assessment (JSA): Evaluate potential workplace hazards and secure a valid Permit-to-Work (PTW) before initiating tasks.\n2. Certified PPE: Always wear task-appropriate safety gear (Hard hat, Steel-toe shoes, Splash goggles, and rated gloves).\n3. SOP Compliance: Follow validated Standard Operating Procedures and consult your plant operations manual.\n4. Emergency Response: In case of anomaly, activate the Emergency Stop and notify the EHS Safety Officer immediately.\n\n💡 You can also ask me about specific topics like PPE, LOTO, Chemical Spill, Inspection, Apprentice roles, or Future Trends!`;
+}
+
 export function buildBuddyFallbackResponse(userMessage: string, mode: BuddyMode): string {
   const query = userMessage.toLowerCase().trim();
 
-  // Try matching domain safety knowledge base
+  // 1. Try matching domain safety & plant knowledge base
   for (const entry of SAFETY_KNOWLEDGE_BASE) {
     if (entry.triggers.some((trigger) => query.includes(trigger))) {
       return mode === 'hinglish' ? entry.hi : entry.en;
     }
   }
 
+  // 2. Check for emergency triggers
   if (isEmergencyPrompt(userMessage)) {
     return mode === 'hinglish'
       ? '⚠️ Emergency में काम तुरंत रोक दें, alarm raise करें, supervisor या EHS team को inform करें, area को isolate करें, और nearest emergency exit से evacuate करें. Exact hazard बताओगे तो मैं सही SOP बता दूंगा.'
       : '⚠️ In an emergency, stop work immediately, raise the alarm, inform your supervisor or EHS team, isolate the area, and evacuate through the nearest exit route. Tell me the specific hazard for exact SOP guidance.';
   }
 
-  return mode === 'hinglish'
-    ? 'नमस्ते! मैं Buddy AI हूँ, आपका Industrial Safety व Chemical Plant Assistant. आप मुझसे Safety Protocols (PPE, LOTO, Chemical Spill, Fire Safety, Confined Space, First Aid) के बारे में कोई भी सवाल पूछ सकते हैं.'
-    : 'Hello! I am Buddy AI, your Industrial Safety and Plant Training Assistant. You can ask me about Safety Protocols (PPE, LOTO, Chemical Spill, Fire Emergency, Confined Space Entry, Electrical Safety, or First Aid). How can I assist you today?';
+  // 3. Synthesize smart contextual response for all other inquiries
+  return synthesizeSmartResponse(query, mode);
 }
