@@ -1,12 +1,11 @@
 import { randomUUID } from 'crypto';
-import { checkCircuitBreaker } from '@/lib/utils/circuitBreaker';
 import { NextResponse } from 'next/server';
 import { cleanResponse } from '@/utils/cleanResponse';
 import { buildBuddyFallbackResponse } from '@/utils/buddyFallback';
 import { getMongoDb } from '@/lib/mongodb';
 import { resolveSessionUser } from '@/lib/auth/session';
 import { checkRequestRateLimit } from '@/lib/security/requestRateLimit';
-import { callAI, stripReasoningBlocks } from '@/lib/server/aiGateway';
+import { callAI } from '@/lib/server/aiGateway';
 
 function needsDetailedResponse(text: string): boolean {
   const q = text.toLowerCase();
@@ -65,10 +64,6 @@ function normalizeConversation(messages: Array<{ role?: string; content?: string
   }
 
   return alternating;
-}
-
-function hasDevanagari(text: string): boolean {
-  return /[\u0900-\u097F]/.test(text);
 }
 
 function buildSystemPrompt(isHinglish: boolean, isVoiceInitiated: boolean, isQuizActive: boolean = false): string {
@@ -169,64 +164,16 @@ export async function POST(request: Request) {
     }
 
 
-    const circuitStatus = await checkCircuitBreaker();
-    if (circuitStatus.isBroken) {
-      // Temporary fallback call
-      return withCorrelation(NextResponse.json({
-        choices: [{
-          message: {
-            content: buildBuddyFallbackResponse(latestUserMessage, 'english')
-          }
-        }]
-      }), correlationId);
-    }
-
     const { messages, isQuizActive } = await request.json();
-    const apiKey = process.env.SARVAM_API_KEY;
 
     // Extract language mode and voice intent from system message addendum
     let isVoiceInitiated = false;
     let filteredMessages = messages || [];
 
-    if (!apiKey) {
-      console.warn('[Sarvam Chat Proxy] SARVAM_API_KEY missing. Falling back to OpenRouter/static provider.');
-      filteredMessages = normalizeConversation(filteredMessages);
-      latestUserMessage = [...filteredMessages]
-        .reverse()
-        .find((m: { role?: string; content?: string }) => m?.role === 'user')?.content ?? '';
-
-      const gatewayResult = await callAI({
-        task: 'buddy_chat',
-        messages: filteredMessages,
-        temperature: 0.6,
-        max_tokens: 500,
-      });
-
-      if (gatewayResult.provider !== 'static_fallback') {
-        const cleaned = cleanResponse(stripReasoningBlocks(gatewayResult.content));
-        return withCorrelation(NextResponse.json({
-          choices: [{ message: { content: enforceWordCap(cleaned, needsDetailedResponse(latestUserMessage) ? 200 : 100) } }],
-        }), correlationId);
-      }
-
-      return withCorrelation(NextResponse.json({
-        choices: [
-          {
-            message: {
-              content: cleanResponse(
-                buildBuddyFallbackResponse(latestUserMessage, hasDevanagari(latestUserMessage) ? 'hinglish' : 'english')
-              ),
-            },
-          },
-        ],
-      }), correlationId);
-    }
-
     if (filteredMessages.length > 0 && filteredMessages[0].role === 'system') {
       const sysMsg = filteredMessages[0].content || '';
       isHinglish = sysMsg.includes('[LANGUAGE_MODE: HINGLISH]');
       isVoiceInitiated = sysMsg.includes('[VOICE_INPUT]');
-      // Remove client addendum since we'll include this info in proper system prompt
       filteredMessages = filteredMessages.slice(1);
     }
 
@@ -250,6 +197,7 @@ export async function POST(request: Request) {
         { status: 200 }
       ), correlationId);
     }
+
     const wordCap = needsDetailedResponse(latestUserMessage) ? 200 : 100;
     const systemPrompt = buildSystemPrompt(isHinglish, isVoiceInitiated, !!isQuizActive);
 
@@ -281,7 +229,7 @@ export async function POST(request: Request) {
 
     return withCorrelation(NextResponse.json({
       choices: [{ message: { content: cleanedContent } }],
-      usage: { total_tokens: 0 }, // Simplified for gateway
+      usage: { total_tokens: 0 },
       provider: gatewayResult.provider
     }), correlationId);
 

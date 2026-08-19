@@ -25,7 +25,7 @@ export interface AIGatewayRequest {
 
 export interface AIGatewayResponse {
   content: string;
-  provider: 'sarvam' | 'openrouter' | 'static_fallback';
+  provider: 'sarvam' | 'gemini' | 'openrouter' | 'static_fallback';
   model: string;
   isReasoningStripped?: boolean;
 }
@@ -33,26 +33,17 @@ export interface AIGatewayResponse {
 // ─── Provider Config ─────────────────────────────────────────────────────────
 
 const SARVAM_BASE_URL = 'https://api.sarvam.ai';
+const GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/openai';
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 
-const OPENROUTER_MODELS: Record<AITask, { primary: string; backup: string }> = {
-  buddy_chat: {
-    primary: 'meta-llama/llama-3.3-70b-instruct:free',
-    backup: 'google/gemma-4-31b-it:free',
-  },
-  practice_quiz: {
-    primary: 'meta-llama/llama-3.3-70b-instruct:free',
-    backup: 'google/gemma-4-31b-it:free',
-  },
-  admin_quiz: {
-    primary: 'meta-llama/llama-3.3-70b-instruct:free',
-    backup: 'google/gemma-4-31b-it:free',
-  },
-  thumbnail_keywords: {
-    primary: 'meta-llama/llama-3.3-70b-instruct:free',
-    backup: 'google/gemma-4-31b-it:free',
-  },
-};
+const OPENROUTER_FALLBACK_MODELS: string[] = [
+  'meta-llama/llama-3.3-70b-instruct:free',
+  'meta-llama/llama-3.1-8b-instruct:free',
+  'mistralai/mistral-7b-instruct:free',
+  'google/gemini-2.0-flash-exp:free',
+  'deepseek/deepseek-chat:free',
+  'qwen/qwen-2.5-coder-32b-instruct:free',
+];
 
 /**
  * Strips various AI reasoning/thinking blocks from the output text.
@@ -202,6 +193,51 @@ async function callSarvam(
   throw lastError || new Error('Sarvam failed after all attempts');
 }
 
+// ─── Gemini Caller ───────────────────────────────────────────────────────────
+
+async function callGemini(
+  messages: Array<{ role: string; content: string }>,
+  temperature: number,
+  maxTokens: number,
+  apiKey: string,
+): Promise<string> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(`${GEMINI_BASE_URL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'gemini-2.0-flash',
+        messages,
+        temperature,
+        max_tokens: maxTokens,
+      }),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData?.error?.message || errData?.message || `Gemini HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    const content = data?.choices?.[0]?.message?.content;
+
+    if (!content || typeof content !== 'string') {
+      throw new Error('Gemini returned empty or invalid content');
+    }
+
+    return content;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 // ─── OpenRouter Caller ───────────────────────────────────────────────────────
 
 async function callOpenRouter(
@@ -212,7 +248,7 @@ async function callOpenRouter(
   apiKey: string,
 ): Promise<string> {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS + 5000); // slightly more generous
+  const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS + 5000);
 
   try {
     const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
@@ -220,7 +256,7 @@ async function callOpenRouter(
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
-        'HTTP-Referer': 'https://karmasetu.vercel.app',
+        'HTTP-Referer': 'https://karmasetu-lms.onrender.com',
         'X-Title': 'KarmaSetu Industrial Training Platform',
       },
       body: JSON.stringify({
@@ -268,21 +304,22 @@ const OR_ERROR_METRICS: Record<AITask, Parameters<typeof recordOpsMetric>[0]> = 
 };
 
 /**
- * Calls AI with automatic failover: Sarvam (primary) → OpenRouter (fallback) → static_fallback.
+ * Calls AI with automatic failover: Sarvam (primary) → Gemini → OpenRouter (multi-model fallback) → static_fallback.
  *
- * Returns `{ provider: 'static_fallback' }` when both providers fail,
- * so callers can apply their own local static fallback logic.
+ * Returns `{ provider: 'static_fallback' }` when all cloud providers fail,
+ * so callers can apply their own local domain fallback logic.
  */
 export async function callAI(request: AIGatewayRequest): Promise<AIGatewayResponse> {
   const { task, messages, temperature = 0.3, max_tokens = 1000 } = request;
   const sarvamKey = process.env.SARVAM_API_KEY;
+  const geminiKey = process.env.GEMINI_API_KEY;
   const openRouterKey = process.env.OPENROUTER_API_KEY;
 
   // ── Step 1: Try Sarvam (Primary) ──────────────────────────────────────────
 
-  const isInvalidKey = !sarvamKey || sarvamKey === 'your_sarvam_api_key_here' || sarvamKey.trim() === '';
+  const isInvalidSarvamKey = !sarvamKey || sarvamKey === 'your_sarvam_api_key_here' || sarvamKey.trim() === '';
 
-  if (!isInvalidKey && sarvamKey) {
+  if (!isInvalidSarvamKey && sarvamKey) {
     const cbStatus = await checkCircuitBreaker();
 
     if (!cbStatus.isBroken) {
@@ -300,69 +337,62 @@ export async function callAI(request: AIGatewayRequest): Promise<AIGatewayRespon
         const msg = error instanceof Error ? error.message : 'Unknown Sarvam error';
         console.warn(`[AI Gateway] Sarvam failed for task="${task}": ${msg}`);
         
-        // If it's an auth failure, don't just record failure (which opens CB slowly), 
-        // treat it as critically broken for this session.
         if (msg.includes('AUTH_FAILURE')) {
-           console.error(`[AI Gateway] CRITICAL: Sarvam API Key is INVALID. Switching to fallback.`);
+          console.error(`[AI Gateway] CRITICAL: Sarvam API Key is INVALID. Switching to fallback.`);
         } else {
-           await recordCircuitBreakerFailure(msg);
+          await recordCircuitBreakerFailure(msg);
         }
       }
     } else {
-      console.info(`[AI Gateway] Sarvam circuit breaker is OPEN — skipping to OpenRouter for task="${task}"`);
-    }
-  } else {
-    if (isInvalidKey && sarvamKey) {
-       console.warn(`[AI Gateway] SARVAM_API_KEY contains placeholder value. Skipping to OpenRouter.`);
+      console.info(`[AI Gateway] Sarvam circuit breaker is OPEN — skipping to fallback for task="${task}"`);
     }
   }
 
-  // ── Step 2: Try OpenRouter (Fallback) ─────────────────────────────────────
+  // ── Step 2: Try Gemini (Fast & Generous) ───────────────────────────────────
 
-  if (openRouterKey) {
-    const models = OPENROUTER_MODELS[task];
-
-    // Try primary OpenRouter model
+  if (geminiKey && geminiKey.trim() !== '') {
     try {
-      console.info(`[AI Gateway] Trying OpenRouter primary model: ${models.primary} for task="${task}"`);
-      const rawContent = await callOpenRouter(messages, temperature, max_tokens, models.primary, openRouterKey);
+      console.info(`[AI Gateway] Trying Google Gemini 2.0 Flash for task="${task}"`);
+      const rawContent = await callGemini(messages, temperature, max_tokens, geminiKey);
       const content = stripReasoningBlocks(rawContent);
-      recordOpsMetric(OR_SUCCESS_METRICS[task]);
-      return { 
-        content, 
-        provider: 'openrouter', 
-        model: models.primary,
-        isReasoningStripped: rawContent !== content
+      return {
+        content,
+        provider: 'gemini',
+        model: 'gemini-2.0-flash',
+        isReasoningStripped: rawContent !== content,
       };
-    } catch (primaryError) {
-      const msg = primaryError instanceof Error ? primaryError.message : 'Unknown';
-      console.warn(`[AI Gateway] OpenRouter primary (${models.primary}) failed: ${msg}`);
+    } catch (geminiError) {
+      const msg = geminiError instanceof Error ? geminiError.message : 'Unknown';
+      console.warn(`[AI Gateway] Gemini failed: ${msg}`);
     }
-
-    // Try backup OpenRouter model
-    try {
-      console.info(`[AI Gateway] Trying OpenRouter backup model: ${models.backup} for task="${task}"`);
-      const rawContent = await callOpenRouter(messages, temperature, max_tokens, models.backup, openRouterKey);
-      const content = stripReasoningBlocks(rawContent);
-      recordOpsMetric(OR_SUCCESS_METRICS[task]);
-      return { 
-        content, 
-        provider: 'openrouter', 
-        model: models.backup,
-        isReasoningStripped: rawContent !== content
-      };
-    } catch (backupError) {
-      const msg = backupError instanceof Error ? backupError.message : 'Unknown';
-      console.warn(`[AI Gateway] OpenRouter backup (${models.backup}) also failed: ${msg}`);
-      recordOpsMetric(OR_ERROR_METRICS[task]);
-    }
-  } else {
-    console.info(`[AI Gateway] No OPENROUTER_API_KEY set — skipping fallback for task="${task}"`);
   }
 
-  // ── Step 3: Both failed — return static_fallback signal ───────────────────
+  // ── Step 3: Try OpenRouter (Multi-model Fallback) ──────────────────────────
 
-  console.warn(`[AI Gateway] All providers failed for task="${task}" — returning static_fallback`);
+  if (openRouterKey && openRouterKey.trim() !== '') {
+    for (const model of OPENROUTER_FALLBACK_MODELS) {
+      try {
+        console.info(`[AI Gateway] Trying OpenRouter model: ${model} for task="${task}"`);
+        const rawContent = await callOpenRouter(messages, temperature, max_tokens, model, openRouterKey);
+        const content = stripReasoningBlocks(rawContent);
+        recordOpsMetric(OR_SUCCESS_METRICS[task]);
+        return { 
+          content, 
+          provider: 'openrouter', 
+          model,
+          isReasoningStripped: rawContent !== content
+        };
+      } catch (orError) {
+        const msg = orError instanceof Error ? orError.message : 'Unknown';
+        console.warn(`[AI Gateway] OpenRouter model (${model}) failed: ${msg}`);
+      }
+    }
+    recordOpsMetric(OR_ERROR_METRICS[task]);
+  }
+
+  // ── Step 4: All failed — return static_fallback signal ────────────────────
+
+  console.warn(`[AI Gateway] All cloud providers failed for task="${task}" — returning static_fallback`);
   return { content: '', provider: 'static_fallback', model: 'none' };
 }
 
