@@ -32,35 +32,6 @@ function PracticeQuizContent() {
     };
   }, []);
 
-  const fetchNextQuestion = useCallback(
-    async (normalizedTopic: string, existingQuestions: string[]) => {
-      const res = await fetch('/api/trainee/practice-quiz/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          topic: normalizedTopic,
-          language,
-          count: 1,
-          existingQuestions,
-          questionNumber: existingQuestions.length + 1,
-        }),
-      });
-
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to generate quiz.');
-      }
-
-      const nextQuestion = Array.isArray(data.quiz) ? data.quiz[0] : null;
-      if (!nextQuestion) {
-        throw new Error('No question was returned by the AI generator.');
-      }
-
-      return nextQuestion as GeneratedQuestion;
-    },
-    [language]
-  );
 
   const startProgressiveQuiz = useCallback(
     async (rawTopic: string) => {
@@ -69,79 +40,63 @@ function PracticeQuizContent() {
 
       generationRequestIdRef.current += 1;
       const requestId = generationRequestIdRef.current;
-      const collectedQuestions: GeneratedQuestion[] = [];
 
       setError(null);
       setQuizData(null);
       setIsStartingQuiz(true);
 
-      for (let index = 0; index < TOTAL_QUESTIONS; index += 1) {
-        try {
-          const nextQuestion = await fetchNextQuestion(
-            normalizedTopic,
-            collectedQuestions.map((question) => question.q)
-          );
-
-          if (generationRequestIdRef.current !== requestId) {
-            return;
-          }
-
-          collectedQuestions.push(nextQuestion);
-
-          setQuizData({
+      try {
+        const res = await fetch('/api/trainee/practice-quiz/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
             topic: normalizedTopic,
-            questions: [...collectedQuestions],
-            totalQuestions: TOTAL_QUESTIONS,
-            isGenerating: index < TOTAL_QUESTIONS - 1,
-            generationError: null,
-          });
+            language,
+            count: TOTAL_QUESTIONS,
+          }),
+        });
 
-          if (index === 0) {
-            setIsStartingQuiz(false);
-            setTopic('');
-          }
-        } catch (err: unknown) {
-          if (generationRequestIdRef.current !== requestId) {
-            return;
-          }
+        const data = await res.json().catch(() => ({}));
 
-          const message =
-            err instanceof Error
-              ? err.message
-              : 'An error occurred during AI generation. Sarvam AI may be restructuring the response.';
-
-          if (collectedQuestions.length === 0) {
-            setError(message);
-            setQuizData(null);
-          } else {
-            setQuizData({
-              topic: normalizedTopic,
-              questions: [...collectedQuestions],
-              totalQuestions: TOTAL_QUESTIONS,
-              isGenerating: false,
-              generationError: message,
-            });
-          }
-
-          setIsStartingQuiz(false);
+        if (generationRequestIdRef.current !== requestId) {
           return;
         }
-      }
 
-      if (generationRequestIdRef.current !== requestId) {
-        return;
-      }
+        if (!res.ok || (!data.ok && !Array.isArray(data.quiz))) {
+          throw new Error(data.error || data.message || 'Failed to generate quiz.');
+        }
 
-      setQuizData({
-        topic: normalizedTopic,
-        questions: [...collectedQuestions],
-        totalQuestions: TOTAL_QUESTIONS,
-        isGenerating: false,
-        generationError: null,
-      });
-      setIsStartingQuiz(false);
+        const questions = Array.isArray(data.quiz) ? (data.quiz as GeneratedQuestion[]) : [];
+        if (questions.length === 0) {
+          throw new Error('No questions returned by AI generator.');
+        }
+
+        setQuizData({
+          topic: normalizedTopic,
+          questions,
+          totalQuestions: questions.length,
+          isGenerating: false,
+          generationError: null,
+        });
+
+        setIsStartingQuiz(false);
+        setTopic('');
+      } catch (err: unknown) {
+        if (generationRequestIdRef.current !== requestId) {
+          return;
+        }
+
+        const message =
+          err instanceof Error
+            ? err.message
+            : 'An error occurred during AI generation. Sarvam AI may be restructuring the response.';
+
+        setError(message);
+        setQuizData(null);
+        setIsStartingQuiz(false);
+      }
     },
-    [fetchNextQuestion]
+    [language]
   );
 
   const handleGenerate = async (e: React.FormEvent) => {

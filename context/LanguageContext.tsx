@@ -305,6 +305,11 @@ const translations: Record<Lang, Record<string, string>> = {
     'tip.safety_9': 'Take hydration breaks because fatigue increases risk.',
     'tip.safety_10': 'Safety is everyone\'s responsibility, so speak up when you see a hazard.',
 
+    'nav.section.learn': 'Learn',
+    'nav.section.compete': 'Compete',
+    'nav.section.account': 'Account',
+    'buddy.assistant_label': 'Buddy AI Assistant',
+
     'nav.dashboard': 'Dashboard',
     'nav.training': 'Training',
     'nav.analytics': 'Analytics',
@@ -760,6 +765,11 @@ const translations: Record<Lang, Record<string, string>> = {
     'tip.safety_8': 'Emergency exit routes याद रखें और उन्हें कभी block मत करें.',
     'tip.safety_9': 'Hydration breaks लेते रहें, क्योंकि थकान risk बढ़ाती है.',
     'tip.safety_10': 'Safety सबकी responsibility है, इसलिए hazard दिखे तो तुरंत बोलें.',
+
+    'nav.section.learn': 'सीखें (Learn)',
+    'nav.section.compete': 'प्रतियोगिता (Compete)',
+    'nav.section.account': 'खाता (Account)',
+    'buddy.assistant_label': 'Buddy AI असिस्टेंट',
 
     'nav.dashboard': 'डैशबोर्ड',
     'nav.training': 'ट्रेनिंग',

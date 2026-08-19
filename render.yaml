@@ -16,6 +16,8 @@ services:
         sync: false
       - key: SARVAM_API_KEY
         sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
       - key: MONGODB_SETUP_KEY
         sync: false
       - key: NEXT_PUBLIC_BASE_URL

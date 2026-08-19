@@ -2,6 +2,9 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
+import { useLanguage } from '@/context/LanguageContext';
+import ChatbotWidget from '@/components/chatbot/ChatbotWidget';
 
 const translations: Record<string, { en: string; hi: string }> = {
     "brand.text": { en: "Karmasetu", hi: "कर्मसेतु" },
@@ -100,7 +103,8 @@ class Particle {
 }
 
 export default function ModernLanding() {
-    const [currentLang, setCurrentLang] = useState<'en' | 'hi'>('en');
+    const { language, setLanguage } = useLanguage();
+    const currentLang = language === 'HINGLISH' ? 'hi' : 'en';
     const [isModalOpen, setIsModalOpen] = useState(false);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const animFrameRef = useRef<number | null>(null);
@@ -237,9 +241,9 @@ export default function ModernLanding() {
             <div className="navbar-wrapper">
                 <nav className="navbar glass navbar-pill">
                     <div className="nav-content">
-                        <Link href="#" className="brand">
+                        <Link href="/" className="brand">
                             <div className="brand-icon-wrapper">
-                                <img src="/assets/logo.png" alt="Karmasetu Logo" className="logo-img" />
+                                <Image src="/logo.png" alt="Karmasetu Logo" width={36} height={36} className="logo-img object-contain" />
                             </div>
                             <span className="brand-text">{t('brand.text')}</span>
                         </Link>
@@ -249,11 +253,11 @@ export default function ModernLanding() {
                             <li><Link href="#about" className="nav-item"><span className="icon">🏢</span> {t('nav.about')}</Link></li>
                         </ul>
                         <div className="nav-actions" style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
-                            <button onClick={() => setCurrentLang(currentLang === 'en' ? 'hi' : 'en')} className="btn lang-btn glass" title="Toggle Language">
+                            <button onClick={() => setLanguage(language === 'EN' ? 'HINGLISH' : 'EN')} className="btn lang-btn glass cursor-pointer" title="Toggle Language">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>
-                                <span className="lang-text" style={{ marginLeft: '0.4rem' }}>{currentLang === 'en' ? 'EN' : 'HI'}</span>
+                                <span className="lang-text" style={{ marginLeft: '0.4rem' }}>{language === 'EN' ? 'EN' : 'हि'}</span>
                             </button>
-                            <button onClick={() => setIsModalOpen(true)} className="btn btn-primary glow-btn"><span style={{ marginRight: '0.5rem' }}>🔑</span> <span>{t('btn.login')}</span></button>
+                            <button onClick={() => setIsModalOpen(true)} className="btn btn-primary glow-btn cursor-pointer"><span style={{ marginRight: '0.5rem' }}>🔑</span> <span>{t('btn.login')}</span></button>
                         </div>
                     </div>
                 </nav>
@@ -386,18 +390,18 @@ export default function ModernLanding() {
                 <div className="footer-grid">
                     <div className="footer-brand">
                         <div className="brand-logotype">
-                            <img src="/assets/logo.png" alt="Logo" className="footer-logo" />
+                            <Image src="/logo.png" alt="KarmaSetu Logo" width={32} height={32} className="footer-logo object-contain" />
                             <span className="brand-text">{t('brand.text')}</span>
                         </div>
                         <p style={{ marginTop: '1rem' }}>{t('footer.brand')}</p>
                         <div className="social-links">
-                            <Link href="#" className="social-icon">
+                            <Link href="#platform" className="social-icon" aria-label="Platform">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-globe"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
                             </Link>
-                            <Link href="#" className="social-icon">
+                            <Link href="/trainee/analytics" className="social-icon" aria-label="Analytics">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-bar-chart-2"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></svg>
                             </Link>
-                            <Link href="#" className="social-icon">
+                            <Link href="/login" className="social-icon" aria-label="Login">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-mail"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
                             </Link>
                         </div>
@@ -406,17 +410,17 @@ export default function ModernLanding() {
                         <div className="footer-links">
                             <h4>{t('footer.plat')}</h4>
                             <ul>
-                                <li><Link href="#"><span className="list-icon">▸</span> <span>{t('footer.plat.1')}</span></Link></li>
-                                <li><Link href="#"><span className="list-icon">▸</span> <span>{t('footer.plat.2')}</span></Link></li>
-                                <li><Link href="#"><span className="list-icon">▸</span> <span>{t('footer.plat.3')}</span></Link></li>
+                                <li><Link href="/trainee/training"><span className="list-icon">▸</span> <span>{t('footer.plat.1')}</span></Link></li>
+                                <li><Link href="/admin/compliance"><span className="list-icon">▸</span> <span>{t('footer.plat.2')}</span></Link></li>
+                                <li><Link href="/trainee/analytics"><span className="list-icon">▸</span> <span>{t('footer.plat.3')}</span></Link></li>
                             </ul>
                         </div>
                         <div className="footer-links">
                             <h4>{t('footer.comp')}</h4>
                             <ul>
-                                <li><Link href="#"><span className="list-icon">▸</span> <span>{t('footer.comp.1')}</span></Link></li>
-                                <li><Link href="#"><span className="list-icon">▸</span> <span>{t('footer.comp.2')}</span></Link></li>
-                                <li><Link href="#"><span className="list-icon">▸</span> <span>{t('footer.comp.3')}</span></Link></li>
+                                <li><Link href="#about"><span className="list-icon">▸</span> <span>{t('footer.comp.1')}</span></Link></li>
+                                <li><Link href="/login?role=trainee"><span className="list-icon">▸</span> <span>{t('footer.comp.2')}</span></Link></li>
+                                <li><Link href="/login?role=admin"><span className="list-icon">▸</span> <span>{t('footer.comp.3')}</span></Link></li>
                             </ul>
                         </div>
                     </div>
@@ -431,17 +435,17 @@ export default function ModernLanding() {
                 if (e.target === e.currentTarget) setIsModalOpen(false);
             }}>
                 <div className="modal-content glass tilt-effect">
-                    <button onClick={() => setIsModalOpen(false)} className="close-btn">&times;</button>
+                    <button onClick={() => setIsModalOpen(false)} className="close-btn" aria-label="Close modal">&times;</button>
                     <h2 className="glow-text modal-title">{t('modal.title')}</h2>
                     <p className="modal-subtitle">{t('modal.sub')}</p>
                     <div className="login-options-grid">
-                        <Link href="/admin" className="login-card outline-bento">
+                        <Link href="/login?role=admin" className="login-card outline-bento">
                             <div className="login-icon">🛡️</div>
                             <h3>{t('modal.admin')}</h3>
                             <p>{t('modal.admin.desc')}</p>
                             <div className="login-action-text glow-text" style={{ marginTop: '1.5rem', fontWeight: 'bold', fontSize: '0.95rem', color: 'var(--primary-cyan)' }}>{t('modal.action')}</div>
                         </Link>
-                        <Link href="/trainee" className="login-card outline-bento">
+                        <Link href="/login?role=trainee" className="login-card outline-bento">
                             <div className="login-icon">👨‍🔬</div>
                             <h3>{t('modal.trainee')}</h3>
                             <p>{t('modal.trainee.desc')}</p>
@@ -450,6 +454,9 @@ export default function ModernLanding() {
                     </div>
                 </div>
             </div>
+
+            {/* Buddy AI Assistant Integration */}
+            <ChatbotWidget />
         </div>
     );
 }

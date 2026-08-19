@@ -5,6 +5,8 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useChatbot } from '@/context/ChatbotContext';
 import { useLanguage } from '@/context/LanguageContext';
 import VoiceRecorder from './VoiceRecorder';
+import { chatCompletion } from '@/utils/sarvamAI';
+import { BUDDY_FALLBACK_SIGNATURES } from '@/utils/buddyFallback';
 
 type VoiceStatus = 'idle' | 'listening' | 'processing';
 
@@ -24,6 +26,7 @@ export default function ChatbotInput() {
   } = useChatbot();
   const { language } = useLanguage();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const handleSendRef = useRef<(overrideText?: string, overrideVoiceInitiated?: boolean) => Promise<void>>(null!);
 
   const resizeTextarea = useCallback(() => {
     if (!textareaRef.current) return;
@@ -90,15 +93,11 @@ export default function ChatbotInput() {
 
       sarvamMessages.push({ role: 'user', content: text });
 
-      const { chatCompletion } = await import('@/utils/sarvamAI');
       const responseText = await chatCompletion(sarvamMessages, isQuizActive);
 
       setIsTyping(false);
       
-      const isFallback = responseText === 'My live AI connection is slow right now, but I can still help with quick safety guidance. Ask in one line with the task, hazard, or chemical name, for example: "chemical spill emergency procedure."'
-          || responseText === 'मेरा live AI connection अभी slow है, लेकिन मैं quick safety help दे सकता हूं. एक line में task, hazard, या chemical का नाम लिखो, जैसे: "chemical spill emergency procedure".'
-          || responseText.includes('I don\'t understand')
-          || responseText.includes('mujhe samajh');
+      const isFallback = BUDDY_FALLBACK_SIGNATURES.some((sig) => responseText.includes(sig));
 
       addMessage({
         role: 'bot',
@@ -154,10 +153,9 @@ export default function ChatbotInput() {
     isQuizActive,
   ]);
 
-  const handleSendRef = useRef(handleSend);
   useEffect(() => {
     handleSendRef.current = handleSend;
-  }, [handleSend]);
+  });
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {

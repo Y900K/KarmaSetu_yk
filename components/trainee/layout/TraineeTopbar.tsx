@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useRef, useEffect, KeyboardEvent } from 'react';
+import React, { useState, KeyboardEvent } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Globe, Menu, Search } from 'lucide-react';
+import { Globe, Menu, PanelLeft, Search } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useTraineeIdentity } from '@/context/TraineeIdentityContext';
 import NotificationCenter from '@/components/shared/NotificationCenter';
@@ -12,9 +12,10 @@ import NotificationCenter from '@/components/shared/NotificationCenter';
 interface TraineeTopbarProps {
   onMenuClick: () => void;
   onToggleCollapse: () => void;
+  isCollapsed?: boolean;
 }
 
-export default function TraineeTopbar({ onMenuClick, onToggleCollapse }: TraineeTopbarProps) {
+export default function TraineeTopbar({ onMenuClick, onToggleCollapse, isCollapsed }: TraineeTopbarProps) {
   const { language, setLanguage, t } = useLanguage();
   const { identity } = useTraineeIdentity();
   const router = useRouter();
@@ -40,10 +41,11 @@ export default function TraineeTopbar({ onMenuClick, onToggleCollapse }: Trainee
         </button>
         <button 
           onClick={onToggleCollapse} 
-          className="hidden md:block text-slate-400 hover:text-white cursor-pointer" 
+          className="hidden md:block text-slate-400 hover:text-cyan-400 p-1.5 rounded-lg hover:bg-cyan-500/10 border border-transparent hover:border-cyan-500/20 transition-all active:scale-95 cursor-pointer" 
           aria-label="Toggle sidebar"
+          title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
-          <Menu className="h-5 w-5" />
+          <PanelLeft className={`h-5 w-5 transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} />
         </button>
         
         <Link href="/trainee/dashboard" className="flex items-center gap-2 md:hidden">

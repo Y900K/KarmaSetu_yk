@@ -81,7 +81,7 @@ export function GlobalStatsProvider({ children, scope = 'auto' }: { children: Re
       ? true
       : scope === 'trainee'
       ? false
-      : pathname.startsWith('/admin') || pathname === '/dashboard';
+      : pathname.startsWith('/admin');
   
   const endpoint = isAdmin 
     ? `/api/admin/overview/stats?timeframe=${timeframe}` 

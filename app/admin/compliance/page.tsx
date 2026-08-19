@@ -298,14 +298,14 @@ function ComplianceContent() {
                         <button
                           onClick={async () => {
                             try {
-                              const response = await fetch('/api/admin/announcements', {
+                              const response = await fetch('/api/admin/compliance/remind', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({
-                                  title: `Compliance Warning: ${t.name}`,
-                                  body: `${t.name} is overdue by ${t.daysOverdue} days for ${t.course}. Immediate completion is required.`,
-                                  sentTo: [t.dept],
-                                  priority: t.daysOverdue > 14 ? 'URGENT' : 'HIGH',
+                                  traineeName: t.name,
+                                  traineeDept: t.dept,
+                                  courseTitle: t.course,
+                                  daysOverdue: t.daysOverdue,
                                 }),
                               });
 
@@ -319,7 +319,7 @@ function ComplianceContent() {
                               showToast(error instanceof Error ? error.message : 'Failed to send directive', 'error');
                             }
                           }}
-                          className="flex items-center gap-2 text-[9px] font-black bg-red-500/10 text-red-500 border border-red-500/30 px-4 py-2 rounded-xl transition-all hover:bg-red-500 hover:text-white hover:shadow-[0_0_15px_rgba(239,68,68,0.4)] active:scale-95 uppercase tracking-widest"
+                          className="flex items-center gap-2 text-[9px] font-black bg-red-500/10 text-red-500 border border-red-500/30 px-4 py-2 rounded-xl transition-all hover:bg-red-500 hover:text-white hover:shadow-[0_0_15px_rgba(239,68,68,0.4)] active:scale-95 uppercase tracking-widest cursor-pointer"
                         >
                           <Send className="h-3 w-3" /> Execute Warning
                         </button>

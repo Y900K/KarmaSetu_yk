@@ -3,6 +3,15 @@ export type BuddyMessageLike = {
   content?: string;
 };
 
+export const BUDDY_FALLBACK_SIGNATURES = [
+  'My live AI connection is slow',
+  'मेरा live AI connection',
+  'In an emergency, stop work immediately',
+  'Emergency में काम तुरंत रोक दें',
+  "I don't understand",
+  'mujhe samajh',
+];
+
 type BuddyMode = 'english' | 'hinglish';
 
 const EMERGENCY_KEYWORDS = [

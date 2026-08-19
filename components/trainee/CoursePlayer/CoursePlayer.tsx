@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { mutate } from 'swr';
 import { Course } from '@/data/coursePlayerDummyData';
 import { useLanguage } from '@/context/LanguageContext';
+import { useChatbot } from '@/context/ChatbotContext';
 import PlayerTopBar from './PlayerTopBar';
 import CourseSidebar from './CourseSidebar';
 import MobileDrawer from './MobileDrawer';
@@ -78,25 +79,16 @@ function CourseSkeleton() {
       
       <div className="flex-1 flex">
         {/* Main Content Area Skeleton */}
-        <div className="flex-1 p-4 sm:p-8 lg:pr-[350px]">
-          <div className="aspect-video w-full rounded-2xl bg-[#1b263b]/50 animate-pulse border border-white/5 overflow-hidden flex items-center justify-center">
-            <div className="w-14 h-14 rounded-full border-4 border-cyan-500/20 border-t-cyan-500 animate-spin" />
-          </div>
-          <div className="mt-8 space-y-4">
-            <div className="h-8 w-3/4 bg-white/5 animate-pulse rounded" />
-            <div className="h-4 w-1/2 bg-white/5 animate-pulse rounded" />
-            <div className="pt-4 space-y-2">
-              <div className="h-4 w-full bg-white/5 animate-pulse rounded" />
-              <div className="h-4 w-full bg-white/5 animate-pulse rounded" />
-              <div className="h-4 w-2/3 bg-white/5 animate-pulse rounded" />
-            </div>
-          </div>
+        <div className="flex-1 p-6 flex flex-col gap-6">
+          <div className="w-full aspect-video bg-white/5 animate-pulse rounded-2xl" />
+          <div className="h-6 w-1/3 bg-white/5 animate-pulse rounded-lg" />
+          <div className="h-4 w-2/3 bg-white/5 animate-pulse rounded-lg" />
         </div>
 
-        {/* Sidebar Skeleton (Desktop Only) */}
-        <div className="hidden lg:block fixed right-0 top-[52px] bottom-0 w-[350px] border-l border-white/5 bg-[#1b263b]/40 p-4 space-y-4">
-          <div className="h-10 w-full bg-white/5 animate-pulse rounded-xl" />
-          <div className="space-y-3 pt-4">
+        {/* Sidebar Skeleton */}
+        <div className="w-80 border-l border-white/5 bg-[#1b263b]/50 p-4 hidden md:flex flex-col gap-4">
+          <div className="h-8 w-full bg-white/5 animate-pulse rounded-lg" />
+          <div className="flex flex-col gap-2">
             {[1, 2, 3, 4, 5, 6].map(i => (
               <div key={i} className="h-16 w-full bg-white/5 animate-pulse rounded-xl" />
             ))}
@@ -110,6 +102,16 @@ function CourseSkeleton() {
 export default function CoursePlayer({ courseId }: { courseId: string }) {
   const router = useRouter();
   const { language } = useLanguage();
+  const { setActiveCourseId } = useChatbot();
+
+  useEffect(() => {
+    if (courseId) {
+      setActiveCourseId(courseId);
+    }
+    return () => {
+      setActiveCourseId(null);
+    };
+  }, [courseId, setActiveCourseId]);
 
   const [course, setCourse] = useState<Course | null>(null);
   const [isLoadingCourse, setIsLoadingCourse] = useState(true);

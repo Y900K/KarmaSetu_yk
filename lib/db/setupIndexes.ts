@@ -59,6 +59,9 @@ export async function ensureMongoIndexes(db: Db) {
 
     // Password Resets
     db.collection(COLLECTIONS.passwordResets).createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0, name: 'ttl_password_resets_expiry' }),
+
+    // System Logs
+    db.collection(COLLECTIONS.systemLogs).createIndex({ timestamp: 1 }, { expireAfterSeconds: 7776000, name: 'ttl_system_logs_90d' }),
   ]);
 
   return { ok: true };

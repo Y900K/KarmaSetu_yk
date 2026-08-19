@@ -65,14 +65,15 @@ export default function TraineeLayout({ children }: { children: React.ReactNode 
         <GlobalStatsProvider scope="trainee">
           <div className="flex h-screen overflow-hidden bg-[#020817] text-white">
             <TraineeSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} isCollapsed={isSidebarCollapsed} />
-            <div className="flex min-w-0 flex-1 flex-col transition-all duration-300">
+            <div className="relative flex min-w-0 flex-1 flex-col transition-all duration-300">
               <TraineeTopbar 
                 onMenuClick={() => setSidebarOpen(true)} 
-                onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
+                onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                isCollapsed={isSidebarCollapsed}
               />
               <main ref={mainContentRef} className="flex-1 overflow-y-auto px-4 py-6 pb-24 sm:px-8 sm:pb-32">{children}</main>
+              <ChatbotWidget />
             </div>
-            <ChatbotWidget />
           </div>
         </GlobalStatsProvider>
       </TraineeIdentityProvider>

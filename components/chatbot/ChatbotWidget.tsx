@@ -30,10 +30,11 @@ export default function ChatbotWidget() {
 
   if (!isMounted) return null;
 
-  // Reduced clutter: hide the floating orb on pages that already have native AI integration
-  const isExcludedPage = pathname?.includes('/practice-quiz');
-  
-  if (!isBuddyVisible || isExcludedPage) return null;
+  if (!isBuddyVisible) return null;
+
+  // On practice quiz page, hide the floating orb to prevent clutter, but allow the chat window if opened
+  const isQuizPage = pathname?.includes('/practice-quiz');
+  if (isQuizPage && !isOpen) return null;
 
   return (
     <>
@@ -41,7 +42,7 @@ export default function ChatbotWidget() {
       <div className="fixed inset-0 pointer-events-none z-[40]" ref={constraintsRef} />
 
       {/* TRIGGER BUTTON (when closed) */}
-      {!isOpen && (
+      {!isOpen && !isQuizPage && (
         <motion.div
           drag
           dragConstraints={constraintsRef}

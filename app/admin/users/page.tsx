@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import PageHeader from '@/components/admin/shared/PageHeader';
 import StatusBadge from '@/components/admin/shared/StatusBadge';
 import ProgressBar from '@/components/admin/shared/ProgressBar';
@@ -61,8 +62,16 @@ const avatarColors = ['bg-cyan-600','bg-purple-600','bg-red-600','bg-green-600',
 export default function UsersPage() {
   const { t } = useLanguage();
   const { showToast } = useToast();
+  const searchParams = useSearchParams();
+  const queryParam = searchParams.get('q') || '';
   const [activeTab, setActiveTab] = useState('');
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(queryParam);
+
+  useEffect(() => {
+    if (queryParam) {
+      setSearch(queryParam);
+    }
+  }, [queryParam]);
   const [roleFilter, setRoleFilter] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('name');

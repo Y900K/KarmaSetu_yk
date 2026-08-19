@@ -145,7 +145,7 @@ export default function VideoView({
         playerRef.current = null;
       }
     };
-  }, [lesson.id, lesson.youtubeURL, videoCurrentTime]);
+  }, [lesson.id, lesson.youtubeURL, videoCurrentTime, onUpdatePartialProgress, embedUrl]);
 
 
   const toggleFullscreen = () => {

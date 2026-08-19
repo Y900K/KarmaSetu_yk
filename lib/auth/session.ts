@@ -5,7 +5,6 @@ import {
   buildTokenFingerprint,
   generateSessionToken,
   hashSecret,
-  verifySecret,
 } from '@/lib/auth/security';
 
 const SESSION_COOKIE = 'ks_session';

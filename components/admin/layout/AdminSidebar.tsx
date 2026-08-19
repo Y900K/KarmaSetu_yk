@@ -156,8 +156,13 @@ export default function AdminSidebar({ isOpen, onClose, isCollapsed }: AdminSide
       {/* Mobile overlay */}
       {isOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
-          <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-          <div className="relative h-full">{sidebar}</div>
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-[fadeIn_0.15s_ease]"
+            onClick={onClose}
+          />
+          <div className="relative h-full animate-[slideInLeft_0.2s_ease]">
+            {sidebar}
+          </div>
         </div>
       )}
     </>

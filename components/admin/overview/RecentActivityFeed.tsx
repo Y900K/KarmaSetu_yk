@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { useGlobalStats } from '@/context/GlobalStatsContext';
 
-type ActivityItem = {
+export type ActivityItem = {
   icon: string;
   text: string;
   time: string;

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getMongoDb } from '@/lib/mongodb';
+import { COLLECTIONS } from '@/lib/db/collections';
 import { logSystemEvent } from '@/lib/utils/logger';
 
 export async function GET(req: Request) {
@@ -34,9 +35,15 @@ export async function GET(req: Request) {
     
     // Clear out half-open statuses if they've been stuck for too long (1 hour)
     const stuckThreshold = new Date(Date.now() - 60 * 60 * 1000);
-    await db.collection('system_config').updateMany(
+    await db.collection(COLLECTIONS.systemConfig).updateMany(
       { status: 'half_open', updatedAt: { $lt: stuckThreshold } },
       { $set: { status: 'closed', fails: 0 } }
+    );
+
+    // Auto-publish scheduled announcements that are due
+    await db.collection(COLLECTIONS.adminAnnouncements).updateMany(
+      { status: 'scheduled', scheduledAt: { $lte: new Date() } },
+      { $set: { status: 'active', updatedAt: new Date() } }
     );
 
   } catch (err) {

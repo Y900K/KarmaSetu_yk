@@ -17,6 +17,12 @@ type LeaderboardRow = {
   isCurrentUser?: boolean;
 };
 
+const POINTS_CONFIG = {
+  PROGRESS_WEIGHT: 0.7,
+  COMPLETION_BONUS: 8,
+  CERTIFICATE_BONUS: 12,
+} as const;
+
 function initials(name: string): string {
   if (!name || typeof name !== 'string') return '??';
   return name
@@ -210,7 +216,11 @@ export async function GET(request: Request) {
         const totalCount = enrollment?.totalCount || 0;
         const certStats = certMap.get(id);
         const certCount = certStats?.certCount || 0;
-        const points = Math.round(avgProgress * 0.7 + completedCount * 8 + certCount * 12);
+        const points = Math.round(
+          avgProgress * POINTS_CONFIG.PROGRESS_WEIGHT +
+          completedCount * POINTS_CONFIG.COMPLETION_BONUS +
+          certCount * POINTS_CONFIG.CERTIFICATE_BONUS
+        );
         const lastActivityCandidates = [
           enrollment?.lastActivityAt instanceof Date ? enrollment.lastActivityAt.getTime() : 0,
           certStats?.latestIssuedAt instanceof Date ? certStats.latestIssuedAt.getTime() : 0,

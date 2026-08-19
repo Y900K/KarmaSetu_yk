@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Menu, Search, Globe, PanelLeft } from 'lucide-react';
 import { useAdminIdentity } from '@/context/AdminIdentityContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -17,6 +18,14 @@ interface AdminTopbarProps {
 export default function AdminTopbar({ onMenuClick, onToggleCollapse, isCollapsed }: AdminTopbarProps) {
   const { admin } = useAdminIdentity();
   const { language, setLanguage, t } = useLanguage();
+  const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleSearch = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && searchQuery.trim()) {
+      router.push(`/admin/users?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-40 h-16 bg-[#020817]/80 backdrop-blur-xl border-b border-white/5 flex items-center px-4 sm:px-8 justify-between md:justify-start gap-4">
@@ -54,6 +63,9 @@ export default function AdminTopbar({ onMenuClick, onToggleCollapse, isCollapsed
           <Search className="h-4 w-4 text-slate-500 mr-3 flex-shrink-0 group-focus-within/search:text-cyan-400 transition-colors" />
           <input 
             type="text" 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={handleSearch}
             placeholder={t('admin.topbar.search_placeholder') || 'Search telemetry, trainees, compliance records...'} 
             className="bg-transparent outline-none text-white placeholder-slate-600 w-full font-medium" 
           />

@@ -34,7 +34,7 @@ const prefetchSWRData = (href: string) => {
 
 const navSections = [
   {
-    label: 'Learn',
+    labelKey: 'nav.section.learn',
     items: [
       { key: 'nav.dashboard', href: '/trainee/dashboard', icon: LayoutDashboard },
       { key: 'nav.training', href: '/trainee/training', icon: GraduationCap },
@@ -43,14 +43,14 @@ const navSections = [
     ],
   },
   {
-    label: 'Compete',
+    labelKey: 'nav.section.compete',
     items: [
       { key: 'nav.certificates', href: '/trainee/certificates', icon: BadgeCheck },
       { key: 'nav.leaderboard', href: '/trainee/leaderboard', icon: Trophy },
     ],
   },
   {
-    label: 'Account',
+    labelKey: 'nav.section.account',
     items: [
       { key: 'nav.feedback', href: '/trainee/feedback', icon: MessageSquare },
       { key: 'nav.profile', href: '/trainee/profile', icon: User },
@@ -114,9 +114,9 @@ export default function TraineeSidebar({ isOpen, onClose, isCollapsed }: Trainee
       {/* Nav sections */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6 scrollbar-hide">
         {navSections.map((section) => (
-          <div key={section.label}>
+          <div key={section.labelKey}>
             <div className={`px-4 mb-2 text-[10px] text-cyan-500/70 uppercase tracking-widest font-black overflow-hidden whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'opacity-0 h-0 hidden' : 'opacity-100'}`}>
-              {section.label}
+              {t(section.labelKey)}
             </div>
             <div className="space-y-0.5">
               {section.items.map((item) => {
@@ -151,7 +151,7 @@ export default function TraineeSidebar({ isOpen, onClose, isCollapsed }: Trainee
       <div className={`px-4 pb-4 mt-auto flex justify-center`}>
         <button
           onClick={() => setIsBuddyVisible(!isBuddyVisible)}
-          title={isCollapsed ? t('admin.sidebar.buddy_assistant') : ''}
+          title={isCollapsed ? t('buddy.assistant_label') : ''}
           className={`flex items-center rounded-xl transition-all duration-200 border ${
             isBuddyVisible
               ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400'
@@ -161,7 +161,7 @@ export default function TraineeSidebar({ isOpen, onClose, isCollapsed }: Trainee
           <div className="flex items-center gap-3">
             <Bot className={`h-5 w-5 shrink-0 transition-transform ${isBuddyVisible ? 'scale-110 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]' : ''}`} />
             <span className={`text-sm font-bold whitespace-nowrap transition-all duration-300 ${isCollapsed ? 'w-0 opacity-0 hidden' : 'w-auto opacity-100'}`}>
-              {t('admin.sidebar.buddy_assistant')}
+              {t('buddy.assistant_label')}
             </span>
           </div>
           <div className={`h-5 w-9 shrink-0 rounded-full p-0.5 transition-colors duration-300 ${isCollapsed ? 'hidden' : 'block'} ${isBuddyVisible ? 'bg-cyan-500' : 'bg-slate-600'}`}>
